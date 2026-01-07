@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send } from "lucide-react";
+import { Send, Camera, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,7 @@ interface Message {
 const initialMessages: Message[] = [
   {
     id: "1",
-    content: "Hey! I'm your budget buddy. Just tell me what you spent money on and I'll keep track of everything for you. 💰",
+    content: "Hi! I am your AI budget assistant. Add expenses by typing, speaking, or uploading receipts. Try \"spent $45 on groceries\" or set a budget!",
     role: "assistant",
     timestamp: new Date(),
   },
@@ -66,9 +66,19 @@ export const ChatView = () => {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
+    <div className="flex flex-col h-full bg-background">
+      {/* AI Introduction Card */}
+      <div className="p-4">
+        <div className="bg-card rounded-2xl p-4 shadow-sm border border-border">
+          <p className="text-sm text-foreground leading-relaxed">
+            {messages[0]?.content}
+          </p>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 space-y-3">
+        {messages.slice(1).map((message) => (
           <div
             key={message.id}
             className={cn(
@@ -78,10 +88,10 @@ export const ChatView = () => {
           >
             <div
               className={cn(
-                "max-w-[80%] rounded-2xl px-4 py-2.5",
+                "max-w-[80%] rounded-2xl px-4 py-3 shadow-sm",
                 message.role === "user"
-                  ? "bg-primary text-primary-foreground rounded-br-md"
-                  : "bg-muted text-foreground rounded-bl-md"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-card text-foreground border border-border"
               )}
             >
               <p className="text-sm">{message.content}</p>
@@ -91,21 +101,42 @@ export const ChatView = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 border-t border-border bg-card">
+      {/* Input Area */}
+      <div className="p-4">
         <form
           onSubmit={(e) => {
             e.preventDefault();
             handleSend();
           }}
-          className="flex gap-2"
+          className="flex items-center gap-2"
         >
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Spent $12 on lunch..."
-            className="flex-1 bg-muted border-0"
-          />
-          <Button type="submit" size="icon" className="shrink-0">
+          <button
+            type="button"
+            className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Camera className="w-5 h-5" />
+          </button>
+          
+          <div className="flex-1 flex items-center bg-card border border-border rounded-full px-4">
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type or speak..."
+              className="flex-1 border-0 bg-transparent focus-visible:ring-0 px-0"
+            />
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Mic className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <Button 
+            type="submit" 
+            size="icon" 
+            className="w-10 h-10 rounded-full shrink-0 shadow-md"
+          >
             <Send className="w-4 h-4" />
           </Button>
         </form>
