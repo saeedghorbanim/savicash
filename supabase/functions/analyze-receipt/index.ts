@@ -9,6 +9,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Input validation constants
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+const ALLOWED_IMAGE_FORMATS = ['jpeg', 'jpg', 'png', 'webp', 'gif'];
+
 async function verifyAuth(req: Request): Promise<{ authorized: boolean; error?: string }> {
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
@@ -31,6 +35,34 @@ async function verifyAuth(req: Request): Promise<{ authorized: boolean; error?: 
   return { authorized: true };
 }
 
+function validateImageData(image: unknown): { valid: boolean; error?: string } {
+  if (!image || typeof image !== 'string') {
+    return { valid: false, error: 'Invalid image data' };
+  }
+  
+  // Check for data URL format
+  const dataUrlRegex = /^data:image\/(jpeg|jpg|png|webp|gif);base64,/;
+  const match = image.match(dataUrlRegex);
+  
+  if (!match) {
+    return { valid: false, error: `Invalid image format. Use ${ALLOWED_IMAGE_FORMATS.join(', ').toUpperCase()}` };
+  }
+  
+  // Extract base64 content and estimate size
+  const base64Content = image.split(',')[1];
+  if (!base64Content) {
+    return { valid: false, error: 'Invalid base64 image data' };
+  }
+  
+  // Base64 size estimation: actual bytes ≈ base64 length * 3/4
+  const estimatedSize = (base64Content.length * 3) / 4;
+  if (estimatedSize > MAX_IMAGE_SIZE_BYTES) {
+    return { valid: false, error: 'Image exceeds 5MB limit' };
+  }
+  
+  return { valid: true };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -47,14 +79,24 @@ serve(async (req) => {
       });
     }
 
-    const { image } = await req.json();
+    const body = await req.json();
+    const { image } = body;
 
-    if (!image) {
-      throw new Error('No image data provided');
+    // Validate image input
+    const validation = validateImageData(image);
+    if (!validation.valid) {
+      return new Response(JSON.stringify({ error: validation.error }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     if (!lovableApiKey) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+      console.error("LOVABLE_API_KEY is not configured");
+      return new Response(JSON.stringify({ error: 'Service configuration error' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     console.log('Analyzing receipt image...');
@@ -103,7 +145,10 @@ If you can't read certain fields, use null. Be concise and accurate.`,
     if (!response.ok) {
       const errorText = await response.text();
       console.error('AI Gateway error:', response.status, errorText);
-      throw new Error(`AI Gateway error: ${response.status}`);
+      return new Response(JSON.stringify({ error: 'Unable to analyze receipt.' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const data = await response.json();
@@ -126,13 +171,9 @@ If you can't read certain fields, use null. Be concise and accurate.`,
     });
   } catch (error) {
     console.error('Error analyzing receipt:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    return new Response(JSON.stringify({ error: 'An error occurred processing your request.' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });

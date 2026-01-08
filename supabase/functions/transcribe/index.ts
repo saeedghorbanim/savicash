@@ -9,6 +9,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Input validation constants
+const MAX_AUDIO_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+
 // Process base64 in chunks to prevent memory issues
 function processBase64Chunks(base64String: string, chunkSize = 32768): Uint8Array {
   const chunks: Uint8Array[] = [];
@@ -61,6 +64,24 @@ async function verifyAuth(req: Request): Promise<{ authorized: boolean; error?: 
   return { authorized: true };
 }
 
+function validateAudioData(audio: unknown): { valid: boolean; error?: string } {
+  if (!audio || typeof audio !== 'string') {
+    return { valid: false, error: 'Invalid audio data' };
+  }
+  
+  if (audio.length === 0) {
+    return { valid: false, error: 'Audio data cannot be empty' };
+  }
+  
+  // Base64 size estimation: actual bytes ≈ base64 length * 3/4
+  const estimatedSize = (audio.length * 3) / 4;
+  if (estimatedSize > MAX_AUDIO_SIZE_BYTES) {
+    return { valid: false, error: 'Audio file too large (max 10MB)' };
+  }
+  
+  return { valid: true };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -77,10 +98,24 @@ serve(async (req) => {
       });
     }
 
-    const { audio } = await req.json();
+    const body = await req.json();
+    const { audio } = body;
     
-    if (!audio) {
-      throw new Error('No audio data provided');
+    // Validate audio input
+    const validation = validateAudioData(audio);
+    if (!validation.valid) {
+      return new Response(JSON.stringify({ error: validation.error }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!openAIApiKey) {
+      console.error("OPENAI_API_KEY is not configured");
+      return new Response(JSON.stringify({ error: 'Service configuration error' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Process audio in chunks
@@ -92,6 +127,8 @@ serve(async (req) => {
     formData.append('file', blob, 'audio.webm');
     formData.append('model', 'whisper-1');
 
+    console.log('Sending audio for transcription...');
+
     // Send to OpenAI
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
@@ -102,7 +139,12 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${await response.text()}`);
+      const errorText = await response.text();
+      console.error('Transcription service error:', response.status, errorText);
+      return new Response(JSON.stringify({ error: 'Unable to transcribe audio.' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const result = await response.json();
@@ -114,13 +156,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Transcription error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    return new Response(JSON.stringify({ error: 'An error occurred processing your request.' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
