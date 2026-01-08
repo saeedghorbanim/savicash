@@ -14,7 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      budget_limits: {
+        Row: {
+          category: string
+          created_at: string
+          current_spent: number
+          id: string
+          limit_amount: number
+          period: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          current_spent?: number
+          id?: string
+          limit_amount: number
+          period?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          current_spent?: number
+          id?: string
+          limit_amount?: number
+          period?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
