@@ -24,16 +24,42 @@ export const useLocalStorage = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [budget, setBudget] = useState<BudgetLimit | null>(null);
 
-  // Load data on mount
+  // Load data on mount with error handling for corrupted data
   useEffect(() => {
-    const storedExpenses = localStorage.getItem(EXPENSES_KEY);
-    const storedBudget = localStorage.getItem(BUDGET_KEY);
-    
-    if (storedExpenses) {
-      setExpenses(JSON.parse(storedExpenses));
+    // Load expenses with error handling
+    try {
+      const storedExpenses = localStorage.getItem(EXPENSES_KEY);
+      if (storedExpenses) {
+        const parsed = JSON.parse(storedExpenses);
+        // Validate it's an array
+        if (Array.isArray(parsed)) {
+          setExpenses(parsed);
+        } else {
+          console.error('Invalid expenses data format, resetting');
+          localStorage.removeItem(EXPENSES_KEY);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load expenses from localStorage:', error);
+      localStorage.removeItem(EXPENSES_KEY);
     }
-    if (storedBudget) {
-      setBudget(JSON.parse(storedBudget));
+
+    // Load budget with error handling
+    try {
+      const storedBudget = localStorage.getItem(BUDGET_KEY);
+      if (storedBudget) {
+        const parsed = JSON.parse(storedBudget);
+        // Validate it has required fields
+        if (parsed && typeof parsed === 'object' && 'limit_amount' in parsed) {
+          setBudget(parsed);
+        } else {
+          console.error('Invalid budget data format, resetting');
+          localStorage.removeItem(BUDGET_KEY);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load budget from localStorage:', error);
+      localStorage.removeItem(BUDGET_KEY);
     }
   }, []);
 
