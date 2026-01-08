@@ -1,17 +1,7 @@
-import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, RefreshCw, TrendingUp, Loader2, Sparkles } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-
-interface Expense {
-  id: string;
-  description: string;
-  amount: number;
-  category: string | null;
-  store: string | null;
-  created_at: string;
-}
+import { Calendar, RefreshCw, TrendingUp, Sparkles } from "lucide-react";
+import { Expense } from "@/hooks/useLocalStorage";
 
 interface RecurringPattern {
   id: string;
@@ -93,57 +83,20 @@ function detectRecurringPatterns(expenses: Expense[]): RecurringPattern[] {
   return patterns.sort((a, b) => b.occurrences - a.occurrences);
 }
 
-export const RecurringView = () => {
-  const [patterns, setPatterns] = useState<RecurringPattern[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [totalMonthly, setTotalMonthly] = useState(0);
+interface RecurringViewProps {
+  expenses: Expense[];
+}
 
-  useEffect(() => {
-    fetchExpenses();
+export const RecurringView = ({ expenses }: RecurringViewProps) => {
+  const patterns = detectRecurringPatterns(expenses);
 
-    // Subscribe to realtime updates
-    const channel = supabase
-      .channel('expenses-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'expenses' },
-        () => {
-          fetchExpenses();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const fetchExpenses = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      const detected = detectRecurringPatterns(data || []);
-      setPatterns(detected);
-
-      // Calculate total monthly cost
-      const monthly = detected.reduce((sum, p) => {
-        if (p.frequency === "weekly") {
-          return sum + p.averageAmount * 4.33; // ~4.33 weeks per month
-        }
-        return sum + p.averageAmount;
-      }, 0);
-      setTotalMonthly(monthly);
-    } catch (error) {
-      console.error('Error fetching expenses:', error);
-    } finally {
-      setIsLoading(false);
+  // Calculate total monthly cost
+  const totalMonthly = patterns.reduce((sum, p) => {
+    if (p.frequency === "weekly") {
+      return sum + p.averageAmount * 4.33; // ~4.33 weeks per month
     }
-  };
+    return sum + p.averageAmount;
+  }, 0);
 
   const getFrequencyLabel = (freq: "weekly" | "monthly") => {
     return freq === "weekly" ? "Weekly" : "Monthly";
@@ -152,14 +105,6 @@ export const RecurringView = () => {
   const getFrequencyColor = (freq: "weekly" | "monthly") => {
     return freq === "weekly" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800";
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="p-4 space-y-6 overflow-y-auto h-full">
@@ -195,7 +140,7 @@ export const RecurringView = () => {
             <ul className="text-muted-foreground space-y-1 text-xs">
               <li>• Finds weekly expenses (every 6-8 days)</li>
               <li>• Finds monthly expenses (every 25-35 days)</li>
-              <li>• Shows frequency, average amount & occurrences</li>
+              <li>• Data stored on your device only</li>
             </ul>
           </div>
         </div>
@@ -245,7 +190,7 @@ export const RecurringView = () => {
       )}
 
       <p className="text-xs text-center text-muted-foreground">
-        Patterns are detected automatically from your expense history
+        📱 All data stored locally on your device
       </p>
     </div>
   );
