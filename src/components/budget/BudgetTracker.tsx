@@ -73,12 +73,13 @@ export const BudgetTracker = ({ budget, onSetBudget }: BudgetTrackerProps) => {
   }
 
   const percentage = budget ? (budget.current_spent / budget.limit_amount) * 100 : 0;
+  const remaining = budget ? budget.limit_amount - budget.current_spent : 0;
   const isWarning = percentage >= 80 && percentage < 100;
   const isDanger = percentage >= 100;
 
   return (
     <div className="bg-card rounded-2xl p-4 shadow-sm border border-border">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           {isDanger ? (
             <AlertTriangle className="h-4 w-4 text-destructive" />
@@ -102,37 +103,35 @@ export const BudgetTracker = ({ budget, onSetBudget }: BudgetTrackerProps) => {
         </Button>
       </div>
 
+      {/* Remaining amount - prominent display */}
+      <div className={cn(
+        "text-2xl font-bold mb-2",
+        isDanger && "text-destructive",
+        isWarning && "text-yellow-600",
+        !isDanger && !isWarning && "text-primary"
+      )}>
+        ${remaining >= 0 ? remaining.toFixed(2) : '0.00'} 
+        <span className="text-sm font-normal text-muted-foreground ml-1">remaining</span>
+      </div>
+
       <div className="space-y-2">
         <Progress 
           value={Math.min(percentage, 100)} 
           className={cn(
-            "h-3",
+            "h-2",
             isDanger && "[&>div]:bg-destructive",
             isWarning && "[&>div]:bg-yellow-500"
           )}
         />
         
-        <div className="flex justify-between text-xs">
-          <span className={cn(
-            "font-medium",
-            isDanger && "text-destructive",
-            isWarning && "text-yellow-600"
-          )}>
-            ${budget?.current_spent.toFixed(2)} spent
-          </span>
-          <span className="text-muted-foreground">
-            ${budget?.limit_amount.toFixed(2)} limit
-          </span>
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>${budget?.current_spent.toFixed(2)} spent</span>
+          <span>${budget?.limit_amount.toFixed(2)} limit</span>
         </div>
 
         {isDanger && (
-          <p className="text-xs text-destructive font-medium mt-2">
-            ⚠️ You've exceeded your budget by ${((budget?.current_spent || 0) - (budget?.limit_amount || 0)).toFixed(2)}!
-          </p>
-        )}
-        {isWarning && !isDanger && (
-          <p className="text-xs text-yellow-600 font-medium mt-2">
-            ⚡ Heads up! You've used {percentage.toFixed(0)}% of your budget.
+          <p className="text-xs text-destructive font-medium">
+            ⚠️ Over budget by ${((budget?.current_spent || 0) - (budget?.limit_amount || 0)).toFixed(2)}!
           </p>
         )}
       </div>
