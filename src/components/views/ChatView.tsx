@@ -348,7 +348,12 @@ export const ChatView = () => {
                   className="max-w-full h-auto rounded-lg mb-2 max-h-32 object-cover"
                 />
               )}
-              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+              <p className="text-sm whitespace-pre-wrap">
+                {message.content
+                  .replace(/\[EXPENSE:[\d.]+:[^:]+:[^\]]+\]/g, '')
+                  .replace(/\[BUDGET:(set|add):[\d.]+\]/g, '')
+                  .trim()}
+              </p>
             </div>
           </div>
         ))}
