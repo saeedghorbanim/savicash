@@ -43,6 +43,20 @@ function parseExpenseFromResponse(text: string): { amount: number; description: 
   return null;
 }
 
+// Parse budget command from AI response
+function parseBudgetFromResponse(text: string): { action: 'set' | 'add'; amount: number } | null {
+  const regex = /\[BUDGET:(set|add):([\d.]+)\]/;
+  const match = text.match(regex);
+  
+  if (match) {
+    return {
+      action: match[1] as 'set' | 'add',
+      amount: parseFloat(match[2]),
+    };
+  }
+  return null;
+}
+
 export const ChatView = () => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
@@ -253,6 +267,25 @@ export const ChatView = () => {
           title: "Expense saved! 💰",
           description: `$${expense.amount.toFixed(2)} for ${expense.description}`,
         });
+      }
+
+      // Check for budget commands and update locally
+      const budgetCommand = parseBudgetFromResponse(fullResponseForParsing);
+      if (budgetCommand) {
+        if (budgetCommand.action === 'set') {
+          setBudgetLimit(budgetCommand.amount);
+          toast({
+            title: "Budget set! 💪",
+            description: `Your budget is now $${budgetCommand.amount.toFixed(2)}`,
+          });
+        } else if (budgetCommand.action === 'add') {
+          const currentLimit = budget?.limit_amount || 0;
+          setBudgetLimit(currentLimit + budgetCommand.amount);
+          toast({
+            title: "Budget updated! 📈",
+            description: `Added $${budgetCommand.amount.toFixed(2)} to your budget`,
+          });
+        }
       }
     } catch (error) {
       console.error("Chat error:", error);
