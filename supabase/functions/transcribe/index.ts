@@ -42,27 +42,7 @@ function processBase64Chunks(base64String: string, chunkSize = 32768): Uint8Arra
   return result;
 }
 
-async function verifyAuth(req: Request): Promise<{ authorized: boolean; error?: string }> {
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return { authorized: false, error: 'Missing or invalid authorization header' };
-  }
-
-  const supabaseClient = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    { global: { headers: { Authorization: authHeader } } }
-  );
-
-  const token = authHeader.replace('Bearer ', '');
-  const { data, error } = await supabaseClient.auth.getClaims(token);
-  
-  if (error || !data?.claims) {
-    return { authorized: false, error: 'Invalid or expired token' };
-  }
-
-  return { authorized: true };
-}
+// Authentication removed - this is a demo app using localStorage without user accounts
 
 function validateAudioData(audio: unknown): { valid: boolean; error?: string } {
   if (!audio || typeof audio !== 'string') {
@@ -88,16 +68,8 @@ serve(async (req) => {
   }
 
   try {
-    // Verify authentication
-    const authResult = await verifyAuth(req);
-    if (!authResult.authorized) {
-      console.log('Authentication failed:', authResult.error);
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
+    // No authentication required - demo app using localStorage
+    
     const body = await req.json();
     const { audio } = body;
     
