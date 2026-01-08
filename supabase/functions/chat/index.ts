@@ -1,10 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,7 +35,7 @@ Examples:
 - User says "uber was $23" → Include [EXPENSE:23:uber:transport] in your response
 - User says "I bought lunch for $12" → Include [EXPENSE:12:lunch:dining] in your response
 
-The tag will be hidden from the user, so always include it when you detect an expense mention.
+The tag will be processed by the app, so always include it when you detect an expense mention.
 
 When users mention expenses:
 1. Acknowledge the expense warmly
@@ -52,23 +49,6 @@ Examples of good responses:
 
 Always be helpful, never preachy. You're a friend who happens to be great with money.`;
 
-// Parse expense tags from assistant response
-function parseExpenses(text: string): Array<{ amount: number; description: string; category: string }> {
-  const regex = /\[EXPENSE:([\d.]+):([^:]+):([^\]]+)\]/g;
-  const expenses: Array<{ amount: number; description: string; category: string }> = [];
-  let match;
-  
-  while ((match = regex.exec(text)) !== null) {
-    expenses.push({
-      amount: parseFloat(match[1]),
-      description: match[2].trim(),
-      category: match[3].trim(),
-    });
-  }
-  
-  return expenses;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -76,7 +56,6 @@ serve(async (req) => {
 
   try {
     const { messages } = await req.json();
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (!lovableApiKey) {
       throw new Error("LOVABLE_API_KEY is not configured");
@@ -120,67 +99,7 @@ serve(async (req) => {
       throw new Error(`AI Gateway error: ${response.status}`);
     }
 
-    // Create a transform stream to intercept and process the response
-    let fullResponse = '';
-    const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
-
-    const transformStream = new TransformStream({
-      transform(chunk, controller) {
-        const text = decoder.decode(chunk);
-        fullResponse += text;
-        
-        // Clean the expense tags from the streamed response
-        const cleanedText = text.replace(/\[EXPENSE:[^\]]*\]?/g, '');
-        if (cleanedText) {
-          controller.enqueue(encoder.encode(cleanedText));
-        }
-      },
-      async flush() {
-        // After streaming is complete, save any detected expenses
-        const expenses = parseExpenses(fullResponse);
-        if (expenses.length > 0) {
-          console.log('Detected expenses:', expenses);
-          
-          for (const expense of expenses) {
-            const { error } = await supabase
-              .from('expenses')
-              .insert({
-                description: expense.description,
-                amount: expense.amount,
-                category: expense.category,
-              });
-            
-            if (error) {
-              console.error('Error saving expense:', error);
-            } else {
-              console.log('Saved expense:', expense);
-              
-              // Also update budget spending
-              const { data: budgetData } = await supabase
-                .from('budget_limits')
-                .select('*')
-                .eq('category', 'total')
-                .maybeSingle();
-              
-              if (budgetData) {
-                await supabase
-                  .from('budget_limits')
-                  .update({ 
-                    current_spent: Number(budgetData.current_spent) + expense.amount 
-                  })
-                  .eq('id', budgetData.id);
-                console.log('Updated budget spending');
-              }
-            }
-          }
-        }
-      }
-    });
-
-    const transformedBody = response.body?.pipeThrough(transformStream);
-
-    return new Response(transformedBody, {
+    return new Response(response.body, {
       headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
     });
   } catch (error) {

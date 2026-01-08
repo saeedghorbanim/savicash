@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useVoiceRecording } from "@/hooks/useVoiceRecording";
 import { BudgetTracker } from "@/components/budget/BudgetTracker";
+import { useLocalStorage, BudgetLimit } from "@/hooks/useLocalStorage";
 
 interface Message {
   id: string;
@@ -27,6 +28,21 @@ const initialMessages: Message[] = [
   },
 ];
 
+// Parse expense from AI response
+function parseExpenseFromResponse(text: string): { amount: number; description: string; category: string } | null {
+  const regex = /\[EXPENSE:([\d.]+):([^:]+):([^\]]+)\]/;
+  const match = text.match(regex);
+  
+  if (match) {
+    return {
+      amount: parseFloat(match[1]),
+      description: match[2].trim(),
+      category: match[3].trim(),
+    };
+  }
+  return null;
+}
+
 export const ChatView = () => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
@@ -36,6 +52,8 @@ export const ChatView = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  
+  const { budget, addExpense, setBudgetLimit } = useLocalStorage();
 
   const { isRecording, isProcessing, startRecording, stopRecording } = useVoiceRecording({
     onTranscription: (text) => {
@@ -112,6 +130,14 @@ export const ChatView = () => {
         receiptData = await analyzeReceipt(selectedImage);
         if (receiptData.total) {
           messageContent = `I just uploaded a receipt from ${receiptData.store || 'a store'}. Total: $${receiptData.total}${receiptData.category ? ` (${receiptData.category})` : ''}. ${input}`.trim();
+          
+          // Save the expense from receipt locally
+          addExpense({
+            description: receiptData.store || 'Receipt',
+            amount: parseFloat(receiptData.total),
+            category: receiptData.category || 'shopping',
+            store: receiptData.store || null,
+          });
         } else if (receiptData.raw) {
           messageContent = `I uploaded a receipt image. Here's what was found: ${receiptData.raw}. ${input}`.trim();
         }
@@ -139,9 +165,11 @@ export const ChatView = () => {
     setIsLoading(true);
 
     let assistantContent = "";
+    let fullResponseForParsing = "";
 
     const upsertAssistant = (chunk: string) => {
       assistantContent += chunk;
+      fullResponseForParsing += chunk;
       setMessages((prev) => {
         const last = prev[prev.length - 1];
         if (last?.role === "assistant" && last.id.startsWith("stream-")) {
@@ -211,6 +239,21 @@ export const ChatView = () => {
           }
         }
       }
+
+      // After streaming, check for expense tags and save locally
+      const expense = parseExpenseFromResponse(fullResponseForParsing);
+      if (expense && !receiptData) {
+        addExpense({
+          description: expense.description,
+          amount: expense.amount,
+          category: expense.category,
+          store: null,
+        });
+        toast({
+          title: "Expense saved! 💰",
+          description: `$${expense.amount.toFixed(2)} for ${expense.description}`,
+        });
+      }
     } catch (error) {
       console.error("Chat error:", error);
       toast({
@@ -235,7 +278,7 @@ export const ChatView = () => {
     <div className="flex flex-col h-full bg-background">
       {/* Budget Tracker */}
       <div className="p-4 pb-2">
-        <BudgetTracker />
+        <BudgetTracker budget={budget} onSetBudget={setBudgetLimit} />
       </div>
 
       {/* AI Introduction Card */}
