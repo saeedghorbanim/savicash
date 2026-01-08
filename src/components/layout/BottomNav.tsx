@@ -15,7 +15,10 @@ const tabs = [
 
 export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border safe-area-bottom shadow-lg">
+    <nav 
+      className="fixed bottom-0 left-0 right-0 bg-background border-t border-border shadow-lg"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
       <div className="flex justify-around items-center h-16">
         {tabs.map((tab) => (
           <button
