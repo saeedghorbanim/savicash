@@ -49,10 +49,11 @@ export const ChatView = () => {
     // Mock AI response
     setTimeout(() => {
       const responses = [
-        "Got it! I've logged that expense. Your spending is looking good this week! 📊",
-        "Noted! That's a pretty common expense. Want me to set this up as recurring?",
-        "Added to your history! You've spent a bit more on food this month than usual.",
-        "Tracked! Keep it up with the mindful spending! 🎯",
+        "Got it! I've logged that expense for you. 📊\n\nLooking at your spending this week, you're doing great! You've stayed within your budget for food and entertainment. Keep up the mindful spending habits!",
+        "Noted! That's a common expense I see in your history. 💡\n\nWould you like me to set this up as a recurring expense? It seems like you make this purchase regularly, and tracking it automatically could save you time.",
+        "Added to your history! 📝\n\nI noticed you've spent about 15% more on food this month compared to last month. This isn't necessarily bad, but I wanted to keep you informed so you can adjust if needed.",
+        "Tracked! 🎯\n\nYou're making excellent progress toward your savings goals! At this rate, you'll have an extra $200 saved by the end of the month. Keep it up with these smart spending decisions!",
+        "I've recorded that expense! 💰\n\nQuick tip: Based on your spending patterns, I recommend setting aside about $50-75 each week for unexpected expenses. This could help you avoid any budget surprises.",
       ];
       
       const aiMessage: Message = {
