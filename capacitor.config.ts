@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.472a9dd87da340138c38c3a88cbefba1',
+  appId: 'com.savicash.app',
   appName: 'savicash',
   webDir: 'dist',
   server: {
