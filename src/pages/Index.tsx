@@ -27,7 +27,7 @@ const Index = () => {
     <div className="h-screen bg-background flex flex-col">
       <AppHeader monthlyTotal={monthlyTotal} />
       
-      <div className="flex-1 overflow-hidden pb-16">
+      <div className="flex-1 overflow-hidden pb-20">
         {activeTab === "chat" && <ChatView />}
         {activeTab === "stats" && <StatsView expenses={expenses} />}
         {activeTab === "recurring" && <RecurringView expenses={expenses} />}
