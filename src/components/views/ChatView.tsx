@@ -391,7 +391,7 @@ export const ChatView = () => {
       )}
 
       {/* Input Area */}
-      <div className="p-4">
+      <div className="p-4 pb-6">
         <input
           type="file"
           ref={fileInputRef}
