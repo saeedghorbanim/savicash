@@ -74,15 +74,47 @@ export const BudgetTracker = ({ budget, onSetBudget }: BudgetTrackerProps) => {
 
   const percentage = budget ? (budget.current_spent / budget.limit_amount) * 100 : 0;
   const remaining = budget ? budget.limit_amount - budget.current_spent : 0;
-  const isWarning = percentage >= 80 && percentage < 100;
+  
+  // Tiered alert levels
+  const isWarning = percentage >= 80 && percentage < 90;
+  const isUrgent = percentage >= 90 && percentage < 100;
   const isDanger = percentage >= 100;
+
+  const getAlertMessage = () => {
+    if (isDanger) {
+      return {
+        icon: "🚨",
+        text: `You're over budget by $${((budget?.current_spent || 0) - (budget?.limit_amount || 0)).toFixed(2)}! Time to pause spending.`,
+        className: "text-destructive bg-destructive/10"
+      };
+    }
+    if (isUrgent) {
+      return {
+        icon: "⚠️",
+        text: `Only ${(100 - percentage).toFixed(0)}% left! You're almost out of budget.`,
+        className: "text-orange-600 bg-orange-500/10"
+      };
+    }
+    if (isWarning) {
+      return {
+        icon: "💡",
+        text: `${(100 - percentage).toFixed(0)}% remaining. Budget is running low.`,
+        className: "text-yellow-600 bg-yellow-500/10"
+      };
+    }
+    return null;
+  };
+
+  const alertMessage = getAlertMessage();
 
   return (
     <div className="bg-card rounded-2xl p-4 shadow-sm border border-border">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           {isDanger ? (
-            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <AlertTriangle className="h-4 w-4 text-destructive animate-pulse" />
+          ) : isUrgent ? (
+            <AlertTriangle className="h-4 w-4 text-orange-500" />
           ) : isWarning ? (
             <AlertTriangle className="h-4 w-4 text-yellow-500" />
           ) : (
@@ -107,8 +139,9 @@ export const BudgetTracker = ({ budget, onSetBudget }: BudgetTrackerProps) => {
       <div className={cn(
         "text-2xl font-bold mb-2",
         isDanger && "text-destructive",
+        isUrgent && "text-orange-600",
         isWarning && "text-yellow-600",
-        !isDanger && !isWarning && "text-primary"
+        !isDanger && !isUrgent && !isWarning && "text-primary"
       )}>
         ${remaining >= 0 ? remaining.toFixed(2) : '0.00'} 
         <span className="text-sm font-normal text-muted-foreground ml-1">remaining</span>
@@ -120,6 +153,7 @@ export const BudgetTracker = ({ budget, onSetBudget }: BudgetTrackerProps) => {
           className={cn(
             "h-2",
             isDanger && "[&>div]:bg-destructive",
+            isUrgent && "[&>div]:bg-orange-500",
             isWarning && "[&>div]:bg-yellow-500"
           )}
         />
@@ -129,10 +163,10 @@ export const BudgetTracker = ({ budget, onSetBudget }: BudgetTrackerProps) => {
           <span>${budget?.limit_amount.toFixed(2)} limit</span>
         </div>
 
-        {isDanger && (
-          <p className="text-xs text-destructive font-medium">
-            ⚠️ Over budget by ${((budget?.current_spent || 0) - (budget?.limit_amount || 0)).toFixed(2)}!
-          </p>
+        {alertMessage && (
+          <div className={cn("text-xs font-medium p-2 rounded-lg", alertMessage.className)}>
+            {alertMessage.icon} {alertMessage.text}
+          </div>
         )}
       </div>
     </div>
