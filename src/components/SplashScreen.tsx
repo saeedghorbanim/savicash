@@ -26,14 +26,14 @@ const SplashScreen = ({ onComplete, duration = 2500 }: SplashScreenProps) => {
 
   return (
     <div 
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-background transition-opacity duration-500 ${
+      className={`fixed inset-0 z-50 transition-opacity duration-500 ${
         fadeOut ? 'opacity-0' : 'opacity-100'
       }`}
     >
       <img 
         src={splashImage} 
         alt="SaviCash" 
-        className="w-64 h-64 object-contain"
+        className="w-full h-full object-cover"
       />
     </div>
   );
