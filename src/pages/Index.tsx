@@ -9,7 +9,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("chat");
-  const { expenses, budget, deleteExpense } = useLocalStorage();
+  const { expenses, budget, deleteExpense, addExpense, setBudgetLimit, saveBudget } = useLocalStorage();
   
   // Calculate monthly total from current month's expenses
   const now = new Date();
@@ -28,7 +28,13 @@ const Index = () => {
       <AppHeader monthlyTotal={monthlyTotal} />
       
       <div className="flex-1 overflow-hidden pb-20">
-        {activeTab === "chat" && <ChatView />}
+        {activeTab === "chat" && (
+          <ChatView 
+            budget={budget}
+            onAddExpense={addExpense}
+            onSetBudgetLimit={setBudgetLimit}
+          />
+        )}
         {activeTab === "stats" && <StatsView expenses={expenses} />}
         {activeTab === "recurring" && <RecurringView expenses={expenses} />}
         {activeTab === "history" && <HistoryView expenses={expenses} onDeleteExpense={deleteExpense} />}
