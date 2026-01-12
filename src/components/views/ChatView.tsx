@@ -6,7 +6,13 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useVoiceRecording } from "@/hooks/useVoiceRecording";
 import { BudgetTracker } from "@/components/budget/BudgetTracker";
-import { useLocalStorage, BudgetLimit } from "@/hooks/useLocalStorage";
+import { BudgetLimit, Expense } from "@/hooks/useLocalStorage";
+
+interface ChatViewProps {
+  budget: BudgetLimit | null;
+  onAddExpense: (expense: Omit<Expense, 'id' | 'created_at'>) => Expense;
+  onSetBudgetLimit: (limitAmount: number) => void;
+}
 
 interface Message {
   id: string;
@@ -57,7 +63,7 @@ function parseBudgetFromResponse(text: string): { action: 'set' | 'add'; amount:
   return null;
 }
 
-export const ChatView = () => {
+export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit }: ChatViewProps) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -66,8 +72,6 @@ export const ChatView = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  
-  const { budget, addExpense, setBudgetLimit } = useLocalStorage();
 
   const { isRecording, isProcessing, startRecording, stopRecording } = useVoiceRecording({
     onTranscription: (text) => {
@@ -146,7 +150,7 @@ export const ChatView = () => {
           messageContent = `I just uploaded a receipt from ${receiptData.store || 'a store'}. Total: $${receiptData.total}${receiptData.category ? ` (${receiptData.category})` : ''}. ${input}`.trim();
           
           // Save the expense from receipt locally
-          addExpense({
+          onAddExpense({
             description: receiptData.store || 'Receipt',
             amount: parseFloat(receiptData.total),
             category: receiptData.category || 'shopping',
@@ -257,7 +261,7 @@ export const ChatView = () => {
       // After streaming, check for expense tags and save locally
       const expense = parseExpenseFromResponse(fullResponseForParsing);
       if (expense && !receiptData) {
-        addExpense({
+        onAddExpense({
           description: expense.description,
           amount: expense.amount,
           category: expense.category,
@@ -273,14 +277,14 @@ export const ChatView = () => {
       const budgetCommand = parseBudgetFromResponse(fullResponseForParsing);
       if (budgetCommand) {
         if (budgetCommand.action === 'set') {
-          setBudgetLimit(budgetCommand.amount);
+          onSetBudgetLimit(budgetCommand.amount);
           toast({
             title: "Budget set! 💪",
             description: `Your budget is now $${budgetCommand.amount.toFixed(2)}`,
           });
         } else if (budgetCommand.action === 'add') {
           const currentLimit = budget?.limit_amount || 0;
-          setBudgetLimit(currentLimit + budgetCommand.amount);
+          onSetBudgetLimit(currentLimit + budgetCommand.amount);
           toast({
             title: "Budget updated! 📈",
             description: `Added $${budgetCommand.amount.toFixed(2)} to your budget`,
@@ -311,7 +315,7 @@ export const ChatView = () => {
     <div className="flex flex-col h-full bg-background">
       {/* Budget Tracker */}
       <div className="p-4 pb-2">
-        <BudgetTracker budget={budget} onSetBudget={setBudgetLimit} />
+        <BudgetTracker budget={budget} onSetBudget={onSetBudgetLimit} />
       </div>
 
       {/* AI Introduction Card */}
