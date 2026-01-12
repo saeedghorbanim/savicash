@@ -51,9 +51,9 @@ export const StatsView = ({ expenses }: StatsViewProps) => {
   const trendInfo = getTrendInfo();
 
   const stats = [
-    { label: "This Month", value: `$${thisMonthTotal.toFixed(0)}`, icon: DollarSign, trend: null },
+    { label: "Spent This Month", value: `$${thisMonthTotal.toFixed(0)}`, icon: DollarSign, trend: null },
     { label: "vs Last Month", value: trendInfo.text, icon: trendInfo.icon, trend: trendInfo.trend },
-    { label: "Daily Average", value: `$${dailyAverage.toFixed(0)}`, icon: TrendingUp, trend: "neutral" },
+    { label: "Avg. Daily Spend", value: `$${dailyAverage.toFixed(0)}`, icon: TrendingUp, trend: "neutral" },
   ];
 
   // Group expenses by category
