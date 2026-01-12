@@ -1,10 +1,53 @@
 import { Card } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, DollarSign, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Minus, Lightbulb } from "lucide-react";
 import { Expense } from "@/hooks/useLocalStorage";
 
 interface StatsViewProps {
   expenses: Expense[];
 }
+
+// Generate spending tips based on spending patterns
+const generateSpendingTips = (categories: { name: string; amount: number; percentage: number }[], totalSpent: number): string[] => {
+  const tips: string[] = [];
+  
+  if (categories.length === 0) return tips;
+  
+  // Find top spending category
+  const topCategory = categories[0];
+  if (topCategory && topCategory.percentage > 40) {
+    tips.push(`${topCategory.name} takes ${topCategory.percentage.toFixed(0)}% of your budget. Consider setting a limit for this category.`);
+  }
+  
+  // Check for food/dining spending
+  const foodCategories = categories.filter(c => 
+    ['food', 'dining', 'restaurant', 'takeout', 'coffee', 'groceries'].includes(c.name.toLowerCase())
+  );
+  const totalFoodSpend = foodCategories.reduce((sum, c) => sum + c.amount, 0);
+  if (totalFoodSpend > totalSpent * 0.3) {
+    tips.push(`You're spending ${((totalFoodSpend / totalSpent) * 100).toFixed(0)}% on food. Try meal prepping to save money.`);
+  }
+  
+  // Check for entertainment/shopping
+  const discretionaryCategories = categories.filter(c => 
+    ['entertainment', 'shopping', 'subscriptions', 'gaming'].includes(c.name.toLowerCase())
+  );
+  const totalDiscretionary = discretionaryCategories.reduce((sum, c) => sum + c.amount, 0);
+  if (totalDiscretionary > totalSpent * 0.25) {
+    tips.push(`Discretionary spending is ${((totalDiscretionary / totalSpent) * 100).toFixed(0)}% of your budget. Review subscriptions you might not need.`);
+  }
+  
+  // General tips based on spending level
+  if (categories.length > 5) {
+    tips.push(`You're spending across ${categories.length} categories. Focus on the top 3 to find savings.`);
+  }
+  
+  // If no specific tips, give a general one
+  if (tips.length === 0 && categories.length > 0) {
+    tips.push(`Your top expense is ${topCategory.name} at $${topCategory.amount.toFixed(0)}. Look for ways to reduce it by 10-15%.`);
+  }
+  
+  return tips.slice(0, 2); // Max 2 tips at a time
+};
 
 export const StatsView = ({ expenses }: StatsViewProps) => {
   const now = new Date();
@@ -145,6 +188,32 @@ export const StatsView = ({ expenses }: StatsViewProps) => {
           </p>
         </Card>
       )}
+
+      {/* AI Spending Tips */}
+      {(() => {
+        const tips = generateSpendingTips(
+          categories.map(c => ({ name: c.name, amount: c.amount, percentage: c.percentage })),
+          thisMonthTotal
+        );
+        
+        if (tips.length === 0) return null;
+        
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Lightbulb className="h-4 w-4 text-amber-500" />
+              <h2 className="text-lg font-semibold">Saving Tips</h2>
+            </div>
+            {tips.map((tip, index) => (
+              <Card key={index} className="p-4 bg-amber-500/10 border-amber-500/20">
+                <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                  💰 {tip}
+                </p>
+              </Card>
+            ))}
+          </div>
+        );
+      })()}
 
       <p className="text-xs text-center text-muted-foreground">
         📱 All data stored locally on your device
