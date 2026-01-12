@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Camera, Mic, MicOff, Loader2, X, Image } from "lucide-react";
+import { Send, Camera, Mic, MicOff, Loader2, X, Image, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -7,6 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useVoiceRecording } from "@/hooks/useVoiceRecording";
 import { BudgetTracker } from "@/components/budget/BudgetTracker";
 import { BudgetLimit, Expense } from "@/hooks/useLocalStorage";
+import { usePromptLimit, MONTHLY_PROMPT_LIMIT } from "@/hooks/usePromptLimit";
+import { Progress } from "@/components/ui/progress";
 
 interface ChatViewProps {
   budget: BudgetLimit | null;
@@ -72,6 +74,15 @@ export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit }: ChatViewPro
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  
+  const { 
+    hasReachedLimit, 
+    getRemainingPrompts, 
+    getUsagePercentage,
+    incrementPromptCount,
+    getLimitReachedMessage,
+    usageData
+  } = usePromptLimit();
 
   const { isRecording, isProcessing, startRecording, stopRecording } = useVoiceRecording({
     onTranscription: (text) => {
@@ -138,6 +149,22 @@ export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit }: ChatViewPro
 
   const handleSend = async () => {
     if ((!input.trim() && !selectedImage) || isLoading) return;
+
+    // Check if user has reached the monthly prompt limit
+    if (hasReachedLimit()) {
+      const limitMessage: Message = {
+        id: Date.now().toString(),
+        content: getLimitReachedMessage(),
+        role: "assistant",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, limitMessage]);
+      toast({
+        title: "Monthly limit reached 📊",
+        description: `You've used all ${MONTHLY_PROMPT_LIMIT} messages for this month.`,
+      });
+      return;
+    }
 
     let messageContent = input;
     let receiptData = null;
@@ -291,6 +318,10 @@ export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit }: ChatViewPro
           });
         }
       }
+
+      // Increment prompt count after successful message
+      incrementPromptCount();
+      
     } catch (error) {
       console.error("Chat error:", error);
       toast({
@@ -324,6 +355,26 @@ export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit }: ChatViewPro
           <p className="text-sm text-foreground leading-relaxed">
             {messages[0]?.content}
           </p>
+          
+          {/* Monthly Prompt Usage */}
+          <div className="mt-3 pt-3 border-t border-border">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <div className="flex items-center gap-1">
+                <MessageCircle className="w-3 h-3" />
+                <span>Monthly messages</span>
+              </div>
+              <span>{usageData.count}/{MONTHLY_PROMPT_LIMIT}</span>
+            </div>
+            <Progress 
+              value={getUsagePercentage()} 
+              className="h-1.5"
+            />
+            {getRemainingPrompts() <= 5 && getRemainingPrompts() > 0 && (
+              <p className="text-xs text-amber-600 mt-1">
+                Only {getRemainingPrompts()} messages left this month
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
