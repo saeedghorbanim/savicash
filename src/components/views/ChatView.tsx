@@ -349,32 +349,25 @@ export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit }: ChatViewPro
         <BudgetTracker budget={budget} onSetBudget={onSetBudgetLimit} />
       </div>
 
-      {/* AI Introduction Card */}
+      {/* Monthly Prompt Usage */}
       <div className="px-4 pb-2">
-        <div className="bg-card rounded-2xl p-4 shadow-sm border border-border">
-          <p className="text-sm text-foreground leading-relaxed">
-            {messages[0]?.content}
-          </p>
-          
-          {/* Monthly Prompt Usage */}
-          <div className="mt-3 pt-3 border-t border-border">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <div className="flex items-center gap-1">
-                <MessageCircle className="w-3 h-3" />
-                <span>Monthly messages</span>
-              </div>
-              <span>{usageData.count}/{MONTHLY_PROMPT_LIMIT}</span>
+        <div className="bg-card rounded-2xl p-3 shadow-sm border border-border">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <div className="flex items-center gap-1">
+              <MessageCircle className="w-3 h-3" />
+              <span>Monthly messages</span>
             </div>
-            <Progress 
-              value={getUsagePercentage()} 
-              className="h-1.5"
-            />
-            {getRemainingPrompts() <= 5 && getRemainingPrompts() > 0 && (
-              <p className="text-xs text-amber-600 mt-1">
-                Only {getRemainingPrompts()} messages left this month
-              </p>
-            )}
+            <span>{usageData.count}/{MONTHLY_PROMPT_LIMIT}</span>
           </div>
+          <Progress 
+            value={getUsagePercentage()} 
+            className="h-1.5"
+          />
+          {getRemainingPrompts() <= 5 && getRemainingPrompts() > 0 && (
+            <p className="text-xs text-amber-600 mt-1">
+              Only {getRemainingPrompts()} messages left this month
+            </p>
+          )}
         </div>
       </div>
 

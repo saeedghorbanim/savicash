@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Crown, Sparkles, Shield, Zap, RefreshCw } from "lucide-react";
 import { useInAppPurchase } from "@/hooks/useInAppPurchase";
 import { FREE_USAGE_LIMIT } from "@/hooks/useAppUsage";
-import savicashLogo from "@/assets/savicash-logo.png";
+import appIcon from "../../assets/../../../assets/icon.png";
 
 interface SubscriptionPaywallProps {
   onSubscriptionSuccess: () => void;
@@ -54,27 +54,31 @@ export const SubscriptionPaywall = ({
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex flex-col items-center justify-center p-6">
-      {/* Logo */}
-      <div className="mb-6">
-        <img 
-          src={savicashLogo} 
-          alt="SaviCash" 
-          className="w-20 h-20 rounded-2xl shadow-lg"
-        />
-      </div>
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 overflow-y-auto">
+      <div className="flex flex-col items-center justify-start min-h-screen p-6 py-12">
+        {/* App Icon Logo */}
+        <div className="mb-2">
+          <img 
+            src={appIcon} 
+            alt="SaviCash" 
+            className="w-24 h-24 rounded-3xl shadow-xl"
+          />
+        </div>
+        
+        {/* App Name */}
+        <h2 className="text-2xl font-bold text-foreground mb-6">SaviCash</h2>
 
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">
-          Unlock SaviCash Pro
-        </h1>
-        <p className="text-muted-foreground">
-          You've used your {FREE_USAGE_LIMIT} free entries.
-          <br />
-          Subscribe to continue tracking your expenses!
-        </p>
-      </div>
+        {/* Header */}
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold text-foreground mb-2">
+            Unlock Pro
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            You've used your {FREE_USAGE_LIMIT} free entries.
+            <br />
+            Subscribe to continue tracking!
+          </p>
+        </div>
 
       {/* Main Card */}
       <Card className="w-full max-w-sm border-primary/20 shadow-xl">
@@ -151,10 +155,16 @@ export const SubscriptionPaywall = ({
         </CardContent>
       </Card>
 
-      {/* Usage info */}
-      <p className="mt-6 text-sm text-muted-foreground">
-        Expenses logged: {usageCount}/{FREE_USAGE_LIMIT} free
-      </p>
+        {/* Usage info */}
+        <p className="mt-6 text-sm text-muted-foreground">
+          Expenses logged: {usageCount}/{FREE_USAGE_LIMIT} free
+        </p>
+        
+        {/* Scroll indicator */}
+        <div className="mt-8 pb-8">
+          <p className="text-xs text-muted-foreground/50">Scroll for more</p>
+        </div>
+      </div>
     </div>
   );
 };
