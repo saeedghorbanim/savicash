@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Crown, Sparkles, Shield, Zap, RefreshCw } from "lucide-react";
 import { useInAppPurchase } from "@/hooks/useInAppPurchase";
 import { FREE_USAGE_LIMIT } from "@/hooks/useAppUsage";
-import appIcon from "../../assets/../../../assets/icon.png";
+import appIcon from "../../../assets/icon.png";
 
 interface SubscriptionPaywallProps {
   onSubscriptionSuccess: () => void;
