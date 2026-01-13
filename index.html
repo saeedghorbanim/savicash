@@ -20,7 +20,23 @@
   </head>
 
   <body>
+    <!-- Inline splash to prevent flash before React loads -->
+    <div id="initial-splash" style="position: fixed; inset: 0; z-index: 9999; background: linear-gradient(180deg, #22c55e 0%, #10b981 100%); display: flex; align-items: center; justify-content: center;">
+      <div style="text-align: center; color: white;">
+        <div style="font-size: 2.5rem; font-weight: bold; font-family: system-ui, sans-serif;">Savi.Cash</div>
+        <div style="font-size: 0.875rem; margin-top: 0.5rem; letter-spacing: 0.1em; opacity: 0.9;">SAVE SMART, LIVE BETTER</div>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Hide initial splash once React app loads
+      window.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+          var splash = document.getElementById('initial-splash');
+          if (splash) splash.style.display = 'none';
+        }, 100);
+      });
+    </script>
   </body>
 </html>
