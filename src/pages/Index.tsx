@@ -81,9 +81,14 @@ const Index = () => {
     );
   }
 
+  const handleDemoDataLoaded = () => {
+    // Force page reload to pick up new data
+    window.location.reload();
+  };
+
   return (
     <div className="h-screen bg-background flex flex-col">
-      <AppHeader monthlyTotal={monthlyTotal} />
+      <AppHeader monthlyTotal={monthlyTotal} onDemoDataLoaded={handleDemoDataLoaded} />
       
       <div className="flex-1 overflow-hidden pb-20">
         {activeTab === "chat" && (
