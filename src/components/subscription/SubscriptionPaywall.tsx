@@ -115,7 +115,7 @@ export const SubscriptionPaywall = ({
 
           {/* Subscribe Button */}
           <Button
-            className="w-full h-14 text-lg font-semibold"
+            className="w-full h-14 text-lg font-semibold shadow-lg transition-all duration-150 active:scale-[0.97] active:shadow-sm active:brightness-[0.85] hover:brightness-110"
             size="lg"
             onClick={handleSubscribe}
             disabled={isLoading || isPurchasing}
