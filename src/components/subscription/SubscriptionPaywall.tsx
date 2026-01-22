@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Crown, Sparkles, Shield, Zap, RefreshCw } from "lucide-react";
 import { useInAppPurchase } from "@/hooks/useInAppPurchase";
 import { FREE_USAGE_LIMIT } from "@/hooks/useAppUsage";
+import { toast } from "sonner";
 import appIcon from "@/assets/savicash-logo.png";
 
 interface SubscriptionPaywallProps {
@@ -32,17 +33,32 @@ export const SubscriptionPaywall = ({
   } = useInAppPurchase(handlePurchaseSuccess);
 
   const handleSubscribe = async () => {
+    // Show immediate visual feedback
+    toast.loading("Connecting to App Store...", { id: "purchase" });
+    
     const success = await purchase();
-    if (!success && !isReady) {
-      // If we're in web mode, show a message
-      console.log('Purchase not available in web mode');
+    
+    if (!success) {
+      if (!isReady) {
+        toast.error("Unable to connect to App Store. Please try again.", { id: "purchase" });
+      } else if (error) {
+        toast.error(error, { id: "purchase" });
+      } else {
+        toast.dismiss("purchase");
+      }
     }
   };
 
   const handleRestore = async () => {
+    toast.loading("Restoring purchases...", { id: "restore" });
+    
     const success = await restore();
+    
     if (success) {
+      toast.success("Purchases restored successfully!", { id: "restore" });
       setShowRestoreHint(false);
+    } else {
+      toast.error("No previous purchases found.", { id: "restore" });
     }
   };
 
@@ -156,14 +172,9 @@ export const SubscriptionPaywall = ({
       </Card>
 
         {/* Usage info */}
-        <p className="mt-6 text-sm text-muted-foreground">
+        <p className="mt-6 text-sm text-muted-foreground mb-8">
           Expenses logged: {usageCount}/{FREE_USAGE_LIMIT} free
         </p>
-        
-        {/* Scroll indicator */}
-        <div className="mt-8 pb-8">
-          <p className="text-xs text-muted-foreground/50">Scroll for more</p>
-        </div>
       </div>
     </div>
   );
