@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Crown, Sparkles, Shield, Zap, RefreshCw } from "lucide-react";
@@ -170,23 +171,19 @@ export const SubscriptionPaywall = ({
               Cancel anytime in App Store settings.
             </p>
             <p className="pt-2">
-              <a 
-                href="https://savicash.lovable.app/terms" 
-                target="_blank" 
-                rel="noopener noreferrer"
+              <Link 
+                to="/terms"
                 className="underline hover:text-primary"
               >
                 Terms of Use
-              </a>
+              </Link>
               {" · "}
-              <a 
-                href="https://savicash.lovable.app/privacy" 
-                target="_blank" 
-                rel="noopener noreferrer"
+              <Link 
+                to="/privacy"
                 className="underline hover:text-primary"
               >
                 Privacy Policy
-              </a>
+              </Link>
             </p>
           </div>
         </CardContent>
