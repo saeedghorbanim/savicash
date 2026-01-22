@@ -163,11 +163,32 @@ export const SubscriptionPaywall = ({
           </div>
 
           {/* Fine print */}
-          <p className="text-xs text-center text-muted-foreground">
-            Subscription automatically renews monthly.
-            <br />
-            Cancel anytime in App Store settings.
-          </p>
+          <div className="text-xs text-center text-muted-foreground space-y-2">
+            <p>
+              Subscription automatically renews monthly.
+              <br />
+              Cancel anytime in App Store settings.
+            </p>
+            <p className="pt-2">
+              <a 
+                href="https://savicash.lovable.app/terms" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="underline hover:text-primary"
+              >
+                Terms of Use
+              </a>
+              {" · "}
+              <a 
+                href="https://savicash.lovable.app/privacy" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="underline hover:text-primary"
+              >
+                Privacy Policy
+              </a>
+            </p>
+          </div>
         </CardContent>
       </Card>
 
