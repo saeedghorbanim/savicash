@@ -58,7 +58,7 @@ const Terms = () => {
               <li>Tap "Cancel Subscription"</li>
             </ul>
             <p className="mt-2">
-              Your subscription will remain active until the end of the current billing period. No refunds are provided for partial subscription periods. For refund requests, please contact Apple Support.
+              Your subscription will remain active until the end of the current billing period. No refunds are provided for partial subscription periods.
             </p>
 
             <h2 className="text-lg font-semibold text-foreground mt-6">6. User Responsibilities</h2>
@@ -83,7 +83,10 @@ const Terms = () => {
 
             <h2 className="text-lg font-semibold text-foreground mt-6">10. Contact</h2>
             <p>
-              For questions about these Terms of Use, please contact us through the App Store.
+              For questions about these Terms of Use, please email us at{" "}
+              <a href="mailto:savicashapp@gmail.com" className="text-primary underline">
+                savicashapp@gmail.com
+              </a>
             </p>
           </div>
         </div>
