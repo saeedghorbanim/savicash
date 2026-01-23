@@ -20,18 +20,14 @@ export const SettingsDialog = ({ open, onOpenChange }: SettingsDialogProps) => {
   const { subscription } = useAppUsage();
 
   const handleManageSubscription = () => {
-    // Deep link to App Store subscription management
-    // This works on iOS to open the subscription settings
+    // Deep link to App Store subscription management (iOS only for now)
     if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios") {
       // iOS App Store subscription management URL
       window.location.href = "itms-apps://apps.apple.com/account/subscriptions";
-    } else if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") {
-      // Google Play subscription management URL
-      window.location.href = "https://play.google.com/store/account/subscriptions";
     } else {
       // For web/testing, show instructions
       toast.info("Subscription Management", {
-        description: "On iOS: Settings → [Your Name] → Subscriptions. On Android: Google Play → Menu → Subscriptions",
+        description: "On iOS: Settings → [Your Name] → Subscriptions",
         duration: 5000,
       });
     }
