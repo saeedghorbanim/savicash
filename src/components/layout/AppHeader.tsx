@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { DollarSign } from "lucide-react";
 import { loadDemoData, clearDemoData } from "@/utils/demoData";
 import { toast } from "sonner";
+import { ProfileMenu } from "@/components/profile/ProfileMenu";
 
 interface AppHeaderProps {
   monthlyTotal: number;
@@ -78,11 +79,15 @@ export const AppHeader = ({ monthlyTotal, onDemoDataLoaded }: AppHeaderProps) =>
           </div>
         </div>
         
-        <div className="text-right">
-          <p className="text-xs opacity-80">This Month</p>
-          <p className="text-xl font-bold font-display">
-            ${monthlyTotal.toFixed(2)}
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <p className="text-xs opacity-80">This Month</p>
+            <p className="text-xl font-bold font-display">
+              ${monthlyTotal.toFixed(2)}
+            </p>
+          </div>
+          
+          <ProfileMenu />
         </div>
       </div>
     </header>

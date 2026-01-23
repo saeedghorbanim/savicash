@@ -1,0 +1,90 @@
+import { useState } from "react";
+import { User, Settings, CreditCard, FileText, Shield, LogOut } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { EditProfileDialog } from "./EditProfileDialog";
+import { SettingsDialog } from "./SettingsDialog";
+import { useProfile } from "@/hooks/useProfile";
+import { Link } from "react-router-dom";
+
+export const ProfileMenu = () => {
+  const { profile } = useProfile();
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="focus:outline-none focus:ring-2 focus:ring-white/30 rounded-full">
+            <Avatar className="h-10 w-10 border-2 border-white/30 cursor-pointer hover:border-white/50 transition-colors">
+              {profile.avatarUrl ? (
+                <AvatarImage src={profile.avatarUrl} alt={profile.name} />
+              ) : null}
+              <AvatarFallback className="bg-white/20 text-primary-foreground text-sm font-medium">
+                {getInitials(profile.name)}
+              </AvatarFallback>
+            </Avatar>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium leading-none">{profile.name}</p>
+              <p className="text-xs leading-none text-muted-foreground">
+                SaviCash User
+              </p>
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setShowEditProfile(true)}>
+            <User className="mr-2 h-4 w-4" />
+            <span>Edit Profile</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowSettings(true)}>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link to="/terms" className="flex items-center">
+              <FileText className="mr-2 h-4 w-4" />
+              <span>Terms of Use</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link to="/privacy" className="flex items-center">
+              <Shield className="mr-2 h-4 w-4" />
+              <span>Privacy Policy</span>
+            </Link>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <EditProfileDialog 
+        open={showEditProfile} 
+        onOpenChange={setShowEditProfile} 
+      />
+      <SettingsDialog 
+        open={showSettings} 
+        onOpenChange={setShowSettings} 
+      />
+    </>
+  );
+};
