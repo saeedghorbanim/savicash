@@ -14,12 +14,12 @@ const Privacy = () => {
       <div className="p-6 pb-12">
         <div className="max-w-2xl mx-auto">
           <Button 
-            variant="ghost" 
-            size="sm" 
-            className="mb-6 active:scale-95 active:bg-muted transition-all"
+            variant="outline" 
+            size="default" 
+            className="mb-6 active:scale-[0.97] active:bg-primary/10 transition-all duration-150 touch-manipulation"
             onClick={handleBack}
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-5 h-5 mr-2" />
             Back
           </Button>
 
