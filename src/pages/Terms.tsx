@@ -11,17 +11,24 @@ const Terms = () => {
 
   return (
     <div className="fixed inset-0 bg-background overflow-y-auto">
+      {/* Sticky header with back button */}
+      <div 
+        className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3"
+        style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+      >
+        <Button 
+          variant="ghost" 
+          size="lg" 
+          className="active:scale-[0.97] active:bg-muted transition-all duration-150 touch-manipulation -ml-2"
+          onClick={handleBack}
+        >
+          <ArrowLeft className="w-5 h-5 mr-2" />
+          Back
+        </Button>
+      </div>
+      
       <div className="p-6 pb-12">
         <div className="max-w-2xl mx-auto">
-          <Button 
-            variant="outline" 
-            size="default" 
-            className="mb-6 active:scale-[0.97] active:bg-primary/10 transition-all duration-150 touch-manipulation"
-            onClick={handleBack}
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Back
-          </Button>
 
           <h1 className="text-2xl font-bold mb-6">Terms of Use</h1>
           
