@@ -62,12 +62,10 @@ const Index = () => {
     })
     .reduce((sum, e) => sum + e.amount, 0);
 
-  // Show loading state while checking usage
+  // Show seamless loading state while checking usage (matches paywall background)
   if (usageLoading) {
     return (
-      <div className="h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
+      <div className="fixed inset-0 bg-gradient-to-b from-background to-muted/30" />
     );
   }
 
@@ -81,14 +79,9 @@ const Index = () => {
     );
   }
 
-  const handleDemoDataLoaded = () => {
-    // Force page reload to pick up new data
-    window.location.reload();
-  };
-
   return (
     <div className="h-screen bg-background flex flex-col">
-      <AppHeader monthlyTotal={monthlyTotal} onDemoDataLoaded={handleDemoDataLoaded} />
+      <AppHeader monthlyTotal={monthlyTotal} />
       
       <div className="flex-1 overflow-hidden pb-20">
         {activeTab === "chat" && (
