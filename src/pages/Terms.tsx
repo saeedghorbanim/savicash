@@ -1,18 +1,27 @@
 import { ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 const Terms = () => {
+  const navigate = useNavigate();
+
+  const handleBack = () => {
+    navigate("/");
+  };
+
   return (
     <div className="fixed inset-0 bg-background overflow-y-auto">
       <div className="p-6 pb-12">
         <div className="max-w-2xl mx-auto">
-          <Link to="/">
-            <Button variant="ghost" size="sm" className="mb-6">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-          </Link>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="mb-6 active:scale-95 active:bg-muted transition-all"
+            onClick={handleBack}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
 
           <h1 className="text-2xl font-bold mb-6">Terms of Use</h1>
           
