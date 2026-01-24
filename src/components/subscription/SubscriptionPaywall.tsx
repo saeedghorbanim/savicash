@@ -71,8 +71,8 @@ export const SubscriptionPaywall = ({
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 overflow-y-auto">
-      <div className="flex flex-col items-center justify-start min-h-screen p-6 py-12">
+    <div className="fixed inset-0 bg-gradient-to-b from-background to-muted/30 overflow-y-auto overscroll-contain">
+      <div className="flex flex-col items-center justify-start p-6 py-12 pb-safe">
         {/* App Icon Logo */}
         <div className="mb-2">
           <img 
