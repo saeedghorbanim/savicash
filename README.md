@@ -1,4 +1,27 @@
-# Welcome to your Lovable project
+# SaviCash - Smart Expense Tracker
+
+SaviCash is an AI-powered expense tracking app that helps you manage your finances effortlessly with voice input, receipt scanning, and intelligent insights.
+
+## Support
+
+If you need help or have questions about SaviCash, please contact us:
+
+- **Email:** savicashapp@gmail.com
+- **Response Time:** We aim to respond within 24-48 hours
+
+### Common Support Topics
+
+- Account and subscription inquiries
+- App functionality questions
+- Bug reports and feedback
+- Privacy and data concerns
+
+### Legal
+
+- [Privacy Policy](https://savicash.lovable.app/privacy)
+- [Terms of Use](https://savicash.lovable.app/terms)
+
+---
 
 ## Project info
 
