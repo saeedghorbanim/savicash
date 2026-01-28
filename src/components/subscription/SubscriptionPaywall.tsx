@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Crown, Sparkles, Shield, Zap, RefreshCw } from "lucide-react";
@@ -17,6 +17,7 @@ export const SubscriptionPaywall = ({
   onSubscriptionSuccess,
   usageCount 
 }: SubscriptionPaywallProps) => {
+  const navigate = useNavigate();
   const [showRestoreHint, setShowRestoreHint] = useState(false);
   
   const handlePurchaseSuccess = () => {
@@ -63,6 +64,14 @@ export const SubscriptionPaywall = ({
     }
   };
 
+  const handleTermsPress = () => {
+    navigate("/terms");
+  };
+
+  const handlePrivacyPress = () => {
+    navigate("/privacy");
+  };
+
   const features = [
     { icon: Zap, text: "Unlimited expense tracking" },
     { icon: Sparkles, text: "AI-powered spending insights" },
@@ -103,11 +112,19 @@ export const SubscriptionPaywall = ({
           <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
             <Crown className="w-8 h-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Pro Monthly</CardTitle>
+          {/* Exact subscription product name */}
+          <CardTitle className="text-2xl">SaviCash Pro Monthly</CardTitle>
+          
+          {/* Price display */}
           <div className="flex items-baseline justify-center gap-1 mt-2">
             <span className="text-4xl font-bold text-primary">{getFormattedPrice()}</span>
             <span className="text-muted-foreground">/month</span>
           </div>
+          
+          {/* Explicit subscription length */}
+          <p className="text-sm text-muted-foreground mt-2 font-medium">
+            1 Month • Auto-Renewable
+          </p>
         </CardHeader>
         
         <CardContent className="space-y-6">
@@ -122,6 +139,18 @@ export const SubscriptionPaywall = ({
               </li>
             ))}
           </ul>
+
+          {/* Prominent Subscription Terms Box */}
+          <div className="bg-muted/50 border border-border rounded-lg p-4 text-sm text-muted-foreground space-y-2">
+            <p className="font-medium text-foreground">Subscription Terms:</p>
+            <ul className="space-y-1.5">
+              <li>• <strong>Price:</strong> $2.99 USD per month</li>
+              <li>• <strong>Duration:</strong> 1 month, auto-renewable</li>
+              <li>• Payment charged to Apple ID at confirmation</li>
+              <li>• Renews automatically unless canceled 24 hours before period ends</li>
+              <li>• Manage or cancel anytime in App Store settings</li>
+            </ul>
+          </div>
 
           {/* Error message */}
           {error && (
@@ -163,28 +192,20 @@ export const SubscriptionPaywall = ({
             </button>
           </div>
 
-          {/* Fine print */}
-          <div className="text-xs text-center text-muted-foreground space-y-2">
-            <p>
-              Subscription automatically renews monthly.
-              <br />
-              Cancel anytime in App Store settings.
-            </p>
-            <p className="pt-2">
-              <Link 
-                to="/terms"
-                className="underline hover:text-primary"
-              >
-                Terms of Use
-              </Link>
-              {" · "}
-              <Link 
-                to="/privacy"
-                className="underline hover:text-primary"
-              >
-                Privacy Policy
-              </Link>
-            </p>
+          {/* Legal links - Large tappable buttons */}
+          <div className="flex justify-center gap-4 pt-2">
+            <button
+              onClick={handleTermsPress}
+              className="px-4 py-3 text-sm font-medium text-primary underline underline-offset-4 hover:text-primary/80 active:scale-[0.97] transition-all duration-150 touch-manipulation min-h-[44px] min-w-[44px]"
+            >
+              Terms of Use
+            </button>
+            <button
+              onClick={handlePrivacyPress}
+              className="px-4 py-3 text-sm font-medium text-primary underline underline-offset-4 hover:text-primary/80 active:scale-[0.97] transition-all duration-150 touch-manipulation min-h-[44px] min-w-[44px]"
+            >
+              Privacy Policy
+            </button>
           </div>
         </CardContent>
       </Card>
