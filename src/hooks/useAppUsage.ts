@@ -16,7 +16,7 @@ interface SubscriptionData {
   productId: string | null;
 }
 
-export const FREE_USAGE_LIMIT = 2;
+export const FREE_USAGE_LIMIT = 3;
 
 export const useAppUsage = () => {
   const [usageData, setUsageData] = useState<AppUsageData>({
