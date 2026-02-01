@@ -36,22 +36,16 @@ const Index = () => {
   };
 
   // Wrapped addExpense that tracks usage
+  // IMPORTANT: when the free limit is exceeded, do NOT process the expense.
+  // We must show the paywall immediately (pre-action) to avoid iOS “oops” flows.
   const handleAddExpense = (expense: Parameters<typeof addExpense>[0]) => {
-    // Check BEFORE adding if they've exceeded the limit
     if (shouldShowPaywall()) {
       setShowPaywall(true);
-      // Still add the expense but show paywall after
-      const result = addExpense(expense);
-      incrementUsage();
-      return result;
+      return;
     }
-    
-    const result = addExpense(expense);
+
+    addExpense(expense);
     incrementUsage();
-    
-    // Check if this expense puts them at the limit (for next time)
-    // The paywall will show on their NEXT action
-    return result;
   };
 
   // Handle successful subscription

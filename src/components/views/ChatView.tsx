@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 
 interface ChatViewProps {
   budget: BudgetLimit | null;
-  onAddExpense: (expense: Omit<Expense, 'id' | 'created_at'>) => Expense;
+  onAddExpense: (expense: Omit<Expense, 'id' | 'created_at'>) => void;
   onSetBudgetLimit: (limitAmount: number) => void;
 }
 
