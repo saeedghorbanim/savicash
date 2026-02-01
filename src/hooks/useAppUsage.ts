@@ -66,10 +66,24 @@ export const useAppUsage = () => {
   // Increment usage count (call this when user performs a meaningful action)
   const incrementUsage = () => {
     const now = new Date().toISOString();
+
+    // IMPORTANT: read current value from storage to avoid stale-closure issues
+    // (can happen on some devices when callbacks fire with older state).
+    let current: AppUsageData | null = null;
+    try {
+      const stored = localStorage.getItem(USAGE_KEY);
+      if (stored) current = JSON.parse(stored);
+    } catch {
+      current = null;
+    }
+
+    const currentUsageCount = typeof current?.usageCount === 'number' ? current.usageCount : usageData.usageCount;
+    const firstUsed = typeof current?.firstUsed === 'string' && current.firstUsed ? current.firstUsed : (usageData.firstUsed || now);
+
     const newData: AppUsageData = {
-      usageCount: usageData.usageCount + 1,
+      usageCount: currentUsageCount + 1,
       lastUsed: now,
-      firstUsed: usageData.firstUsed || now,
+      firstUsed,
     };
     
     localStorage.setItem(USAGE_KEY, JSON.stringify(newData));
