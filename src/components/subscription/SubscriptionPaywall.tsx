@@ -181,16 +181,19 @@ export const SubscriptionPaywall = ({
             )}
           </Button>
 
-          {/* Restore purchases */}
-          <div className="text-center">
-            <button
-              className="text-sm text-muted-foreground hover:text-primary transition-colors underline-offset-4 hover:underline"
-              onClick={handleRestore}
-              disabled={isLoading}
-            >
-              Already subscribed? Restore purchase
-            </button>
-          </div>
+          {/* Restore purchases - DISTINCT BUTTON per App Store Guidelines 3.1.1 */}
+          <Button
+            variant="outline"
+            className="w-full h-12 text-base font-medium"
+            onClick={handleRestore}
+            disabled={isLoading || isPurchasing}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Restore Purchases
+          </Button>
+          <p className="text-xs text-muted-foreground text-center">
+            Already subscribed? Tap above to restore your purchase.
+          </p>
 
           {/* Legal links - Large tappable buttons */}
           <div className="flex justify-center gap-4 pt-2">

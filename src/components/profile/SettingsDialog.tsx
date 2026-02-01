@@ -1,4 +1,4 @@
-import { CreditCard, ExternalLink, Trash2 } from "lucide-react";
+import { CreditCard, ExternalLink, Trash2, RefreshCw } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useAppUsage } from "@/hooks/useAppUsage";
+import { useInAppPurchase } from "@/hooks/useInAppPurchase";
 import { toast } from "sonner";
 import { Capacitor } from "@capacitor/core";
 
@@ -17,7 +18,14 @@ interface SettingsDialogProps {
 }
 
 export const SettingsDialog = ({ open, onOpenChange }: SettingsDialogProps) => {
-  const { subscription } = useAppUsage();
+  const { subscription, setSubscriptionActive } = useAppUsage();
+  
+  const handleRestoreSuccess = (productId: string) => {
+    setSubscriptionActive(productId);
+    toast.success("Subscription restored successfully!");
+  };
+  
+  const { restore, isLoading: isRestoring } = useInAppPurchase(handleRestoreSuccess);
 
   const handleManageSubscription = () => {
     // Deep link to App Store subscription management (iOS only for now)
@@ -89,6 +97,25 @@ export const SettingsDialog = ({ open, onOpenChange }: SettingsDialogProps) => {
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
                 {subscription.isSubscribed ? "Manage Subscription" : "View Subscription Options"}
+              </Button>
+
+              {/* Restore Purchases Button - Required by App Store Guidelines 3.1.1 */}
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={async () => {
+                  toast.loading("Restoring purchases...", { id: "restore" });
+                  const success = await restore();
+                  if (success) {
+                    toast.success("Purchases restored!", { id: "restore" });
+                  } else {
+                    toast.error("No previous purchases found.", { id: "restore" });
+                  }
+                }}
+                disabled={isRestoring}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isRestoring ? 'animate-spin' : ''}`} />
+                Restore Purchases
               </Button>
 
               {subscription.isSubscribed && (
