@@ -21,27 +21,51 @@ const EXPENSES_KEY = 'savicash_expenses';
 const BUDGET_KEY = 'savicash_budget';
 
 export const useLocalStorage = () => {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [budget, setBudget] = useState<BudgetLimit | null>(null);
+  const [expenses, setExpenses] = useState<Expense[]>(() => {
+    // Initialize from localStorage immediately to avoid flash of empty state
+    try {
+      const storedExpenses = localStorage.getItem(EXPENSES_KEY);
+      if (storedExpenses) {
+        const parsed = JSON.parse(storedExpenses);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to initialize expenses from localStorage:', error);
+    }
+    return [];
+  });
+  
+  const [budget, setBudget] = useState<BudgetLimit | null>(() => {
+    // Initialize from localStorage immediately
+    try {
+      const storedBudget = localStorage.getItem(BUDGET_KEY);
+      if (storedBudget) {
+        const parsed = JSON.parse(storedBudget);
+        if (parsed && typeof parsed === 'object' && 'limit_amount' in parsed) {
+          return parsed;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to initialize budget from localStorage:', error);
+    }
+    return null;
+  });
 
-  // Load data on mount with error handling for corrupted data
+  // Re-sync from localStorage when component mounts (handles tab switches)
   useEffect(() => {
     // Load expenses with error handling
     try {
       const storedExpenses = localStorage.getItem(EXPENSES_KEY);
       if (storedExpenses) {
         const parsed = JSON.parse(storedExpenses);
-        // Validate it's an array
         if (Array.isArray(parsed)) {
           setExpenses(parsed);
-        } else {
-          console.error('Invalid expenses data format, resetting');
-          localStorage.removeItem(EXPENSES_KEY);
         }
       }
     } catch (error) {
       console.error('Failed to load expenses from localStorage:', error);
-      localStorage.removeItem(EXPENSES_KEY);
     }
 
     // Load budget with error handling
@@ -49,17 +73,12 @@ export const useLocalStorage = () => {
       const storedBudget = localStorage.getItem(BUDGET_KEY);
       if (storedBudget) {
         const parsed = JSON.parse(storedBudget);
-        // Validate it has required fields
         if (parsed && typeof parsed === 'object' && 'limit_amount' in parsed) {
           setBudget(parsed);
-        } else {
-          console.error('Invalid budget data format, resetting');
-          localStorage.removeItem(BUDGET_KEY);
         }
       }
     } catch (error) {
       console.error('Failed to load budget from localStorage:', error);
-      localStorage.removeItem(BUDGET_KEY);
     }
   }, []);
 

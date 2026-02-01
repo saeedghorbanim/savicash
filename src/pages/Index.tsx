@@ -31,6 +31,8 @@ const Index = () => {
 
   // Check if user should see paywall BEFORE performing an action
   // CRITICAL: Read directly from localStorage to avoid stale React state on mobile
+  // The logic: if usageCount >= FREE_USAGE_LIMIT (3), show paywall
+  // This means: 0, 1, 2 are free uses. At 3, paywall shows.
   const shouldShowPaywall = () => {
     if (subscription.isSubscribed) return false;
     
@@ -40,6 +42,7 @@ const Index = () => {
       if (stored) {
         const parsed = JSON.parse(stored);
         const currentCount = typeof parsed.usageCount === 'number' ? parsed.usageCount : 0;
+        // Show paywall when user has already used all free entries
         return currentCount >= FREE_USAGE_LIMIT;
       }
     } catch {
@@ -50,15 +53,23 @@ const Index = () => {
 
   // Wrapped addExpense that tracks usage
   // IMPORTANT: when the free limit is exceeded, do NOT process the expense.
-  // We must show the paywall immediately (pre-action) to avoid iOS “oops” flows.
+  // We must show the paywall immediately (pre-action) to avoid iOS "oops" flows.
   const handleAddExpense = (expense: Parameters<typeof addExpense>[0]) => {
+    // First check if already at or exceeded limit (for returning users)
     if (shouldShowPaywall()) {
       setShowPaywall(true);
       return;
     }
 
+    // Increment usage count FIRST (returns the new count)
+    // This ensures the count is updated in localStorage before any async issues
+    const newCount = incrementUsage();
+    
+    // Then add the expense
     addExpense(expense);
-    incrementUsage();
+    
+    // If we just hit the limit, the next action attempt will trigger paywall
+    // via shouldShowPaywall() check
   };
 
   // Handle successful subscription
