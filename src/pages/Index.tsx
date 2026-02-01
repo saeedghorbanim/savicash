@@ -6,7 +6,7 @@ import { StatsView } from "@/components/views/StatsView";
 import { RecurringView } from "@/components/views/RecurringView";
 import { HistoryView } from "@/components/views/HistoryView";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { useAppUsage } from "@/hooks/useAppUsage";
+import { useAppUsage, FREE_USAGE_LIMIT } from "@/hooks/useAppUsage";
 import { SubscriptionPaywall } from "@/components/subscription/SubscriptionPaywall";
 
 const Index = () => {
@@ -29,18 +29,28 @@ const Index = () => {
     }
   }, [usageLoading, usageData.usageCount, subscription.isSubscribed]);
 
+  // Check if user should see paywall BEFORE performing an action
+  const shouldShowPaywall = () => {
+    // User has already used their free limit and is not subscribed
+    return usageData.usageCount >= FREE_USAGE_LIMIT && !subscription.isSubscribed;
+  };
+
   // Wrapped addExpense that tracks usage
   const handleAddExpense = (expense: Parameters<typeof addExpense>[0]) => {
-    const result = addExpense(expense);
-    
-    // Increment usage after adding expense
-    incrementUsage();
-    
-    // Check if paywall should show after this expense
-    if (hasExceededFreeUsage()) {
+    // Check BEFORE adding if they've exceeded the limit
+    if (shouldShowPaywall()) {
       setShowPaywall(true);
+      // Still add the expense but show paywall after
+      const result = addExpense(expense);
+      incrementUsage();
+      return result;
     }
     
+    const result = addExpense(expense);
+    incrementUsage();
+    
+    // Check if this expense puts them at the limit (for next time)
+    // The paywall will show on their NEXT action
     return result;
   };
 
