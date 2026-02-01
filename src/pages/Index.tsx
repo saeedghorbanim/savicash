@@ -30,9 +30,22 @@ const Index = () => {
   }, [usageLoading, usageData.usageCount, subscription.isSubscribed]);
 
   // Check if user should see paywall BEFORE performing an action
+  // CRITICAL: Read directly from localStorage to avoid stale React state on mobile
   const shouldShowPaywall = () => {
-    // User has already used their free limit and is not subscribed
-    return usageData.usageCount >= FREE_USAGE_LIMIT && !subscription.isSubscribed;
+    if (subscription.isSubscribed) return false;
+    
+    // Read current count from localStorage to prevent stale state issues
+    try {
+      const stored = localStorage.getItem('savicash_app_usage');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const currentCount = typeof parsed.usageCount === 'number' ? parsed.usageCount : 0;
+        return currentCount >= FREE_USAGE_LIMIT;
+      }
+    } catch {
+      // Fall back to React state
+    }
+    return usageData.usageCount >= FREE_USAGE_LIMIT;
   };
 
   // Wrapped addExpense that tracks usage
