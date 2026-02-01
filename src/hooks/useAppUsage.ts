@@ -19,20 +19,39 @@ interface SubscriptionData {
 export const FREE_USAGE_LIMIT = 3;
 
 export const useAppUsage = () => {
-  const [usageData, setUsageData] = useState<AppUsageData>({
-    usageCount: 0,
-    lastUsed: '',
-    firstUsed: '',
+  // Initialize state from localStorage immediately to avoid stale state on tab switches
+  const [usageData, setUsageData] = useState<AppUsageData>(() => {
+    try {
+      const stored = localStorage.getItem(USAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return {
+          usageCount: typeof parsed.usageCount === 'number' ? parsed.usageCount : 0,
+          lastUsed: parsed.lastUsed || '',
+          firstUsed: parsed.firstUsed || '',
+        };
+      }
+    } catch {
+      // Fall back to default
+    }
+    return { usageCount: 0, lastUsed: '', firstUsed: '' };
   });
-  const [subscription, setSubscription] = useState<SubscriptionData>({
-    isSubscribed: false,
-    subscribedAt: null,
-    expiresAt: null,
-    productId: null,
+  
+  const [subscription, setSubscription] = useState<SubscriptionData>(() => {
+    try {
+      const stored = localStorage.getItem(SUBSCRIPTION_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch {
+      // Fall back to default
+    }
+    return { isSubscribed: false, subscribedAt: null, expiresAt: null, productId: null };
   });
+  
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load data on mount
+  // Re-sync from localStorage on mount (handles potential stale state)
   useEffect(() => {
     loadUsageData();
     loadSubscriptionData();
