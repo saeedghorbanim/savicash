@@ -52,24 +52,30 @@ const Index = () => {
   };
 
   // Wrapped addExpense that tracks usage
-  // IMPORTANT: when the free limit is exceeded, do NOT process the expense.
-  // We must show the paywall immediately (pre-action) to avoid iOS "oops" flows.
+  // CRITICAL: Read localStorage synchronously to prevent race conditions on mobile
   const handleAddExpense = (expense: Parameters<typeof addExpense>[0]) => {
-    // First check if already at or exceeded limit (for returning users)
-    if (shouldShowPaywall()) {
+    // CRITICAL: Read current count directly from localStorage at decision time
+    // This prevents stale React state from allowing extra free entries
+    let currentCount = 0;
+    try {
+      const stored = localStorage.getItem('savicash_app_usage');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        currentCount = typeof parsed.usageCount === 'number' ? parsed.usageCount : 0;
+      }
+    } catch {
+      currentCount = 0;
+    }
+
+    // If already at or past limit (3), show paywall - don't process expense
+    if (!subscription.isSubscribed && currentCount >= FREE_USAGE_LIMIT) {
       setShowPaywall(true);
       return;
     }
 
-    // Increment usage count FIRST (returns the new count)
-    // This ensures the count is updated in localStorage before any async issues
-    const newCount = incrementUsage();
-    
-    // Then add the expense
+    // Increment usage FIRST, then add expense
+    incrementUsage();
     addExpense(expense);
-    
-    // If we just hit the limit, the next action attempt will trigger paywall
-    // via shouldShowPaywall() check
   };
 
   // Handle successful subscription
