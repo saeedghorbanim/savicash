@@ -16,7 +16,7 @@ interface SubscriptionData {
   productId: string | null;
 }
 
-export const FREE_USAGE_LIMIT = 3;
+export const FREE_USAGE_LIMIT = 4;
 
 export const useAppUsage = () => {
   // Initialize state from localStorage immediately to avoid stale state on tab switches
