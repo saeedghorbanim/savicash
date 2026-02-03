@@ -215,7 +215,7 @@ export const SubscriptionPaywall = ({
 
         {/* Usage info */}
         <p className="mt-6 text-sm text-muted-foreground mb-8">
-          Expenses logged: {usageCount}/{FREE_USAGE_LIMIT} free
+          Expenses logged: {usageCount}/{FREE_USAGE_LIMIT + 1} free
         </p>
       </div>
     </div>
