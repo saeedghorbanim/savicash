@@ -24,7 +24,10 @@ const Index = () => {
 
   // Check paywall status on load and when usage changes
   useEffect(() => {
-    if (!usageLoading && hasExceededFreeUsage()) {
+    if (usageLoading) return;
+  
+    // Check if should show paywall
+    if (shouldShowPaywall()) {
       setShowPaywall(true);
     }
   }, [usageLoading, usageData.usageCount, subscription.isSubscribed]);
@@ -63,8 +66,9 @@ const Index = () => {
         const parsed = JSON.parse(stored);
         currentCount = typeof parsed.usageCount === 'number' ? parsed.usageCount : 0;
       }
-    } catch {
-      currentCount = 0;
+    } catch (error) {
+        console.error('Error reading usage count:', error);
+        currentCount = usageData.usageCount; // Fall back to React state
     }
 
     // If already at or past limit (3), show paywall - don't process expense
@@ -73,9 +77,15 @@ const Index = () => {
       return;
     }
 
+    try {
     // Increment usage FIRST, then add expense
     incrementUsage();
     addExpense(expense);
+    }
+    catch (error) {
+      console.error('Error adding expense:', error);
+    // Show error toast to user
+    }
   };
 
   // Handle successful subscription
