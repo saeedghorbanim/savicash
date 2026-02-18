@@ -15,9 +15,10 @@ import { Capacitor } from "@capacitor/core";
 interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onShowPaywall?: () => void;
 }
 
-export const SettingsDialog = ({ open, onOpenChange }: SettingsDialogProps) => {
+export const SettingsDialog = ({ open, onOpenChange, onShowPaywall }: SettingsDialogProps) => {
   const { subscription, setSubscriptionActive } = useAppUsage();
   
   const handleRestoreSuccess = (productId: string) => {
@@ -90,14 +91,27 @@ export const SettingsDialog = ({ open, onOpenChange }: SettingsDialogProps) => {
                 </p>
               )}
 
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={handleManageSubscription}
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                {subscription.isSubscribed ? "Manage Subscription" : "View Subscription Options"}
-              </Button>
+              {subscription.isSubscribed ? (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleManageSubscription}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Manage Subscription
+                </Button>
+              ) : (
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    onOpenChange(false);
+                    onShowPaywall?.();
+                  }}
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Upgrade to Pro
+                </Button>
+              )}
 
               {/* Restore Purchases Button - Required by App Store Guidelines 3.1.1 */}
               <Button 

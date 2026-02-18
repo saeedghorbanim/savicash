@@ -3,10 +3,10 @@ import { ProfileMenu } from "@/components/profile/ProfileMenu";
 
 interface AppHeaderProps {
   monthlyTotal: number;
-  onDemoDataLoaded?: () => void;
+  onShowPaywall?: () => void;
 }
 
-export const AppHeader = ({ monthlyTotal }: AppHeaderProps) => {
+export const AppHeader = ({ monthlyTotal, onShowPaywall }: AppHeaderProps) => {
 
   return (
     <header 
@@ -35,7 +35,7 @@ export const AppHeader = ({ monthlyTotal }: AppHeaderProps) => {
             </p>
           </div>
           
-          <ProfileMenu />
+          <ProfileMenu onShowPaywall={onShowPaywall} />
         </div>
       </div>
     </header>

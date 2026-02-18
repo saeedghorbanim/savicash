@@ -12,14 +12,13 @@ import { SubscriptionPaywall } from "@/components/subscription/SubscriptionPaywa
 const Index = () => {
   const [activeTab, setActiveTab] = useState("chat");
   const [showPaywall, setShowPaywall] = useState(false);
-  const { expenses, budget, deleteExpense, addExpense, setBudgetLimit, saveBudget } = useLocalStorage();
+  const { expenses, budget, deleteExpense, addExpense, setBudgetLimit } = useLocalStorage();
   const { 
-    usageData, 
-    subscription, 
+    usageData,
+    subscription,
     isLoading: usageLoading,
-    incrementUsage, 
-    hasExceededFreeUsage, 
-    setSubscriptionActive 
+    incrementUsage,
+    setSubscriptionActive
   } = useAppUsage();
 
   // Check paywall status on load and when usage changes
@@ -30,6 +29,7 @@ const Index = () => {
     if (shouldShowPaywall()) {
       setShowPaywall(true);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usageLoading, usageData.usageCount, subscription.isSubscribed]);
 
   // Check if user should see paywall BEFORE performing an action
@@ -125,7 +125,7 @@ const Index = () => {
 
   return (
     <div className="h-screen bg-background flex flex-col">
-      <AppHeader monthlyTotal={monthlyTotal} />
+      <AppHeader monthlyTotal={monthlyTotal} onShowPaywall={() => setShowPaywall(true)} />
       
       <div className="flex-1 overflow-hidden pb-20">
         {activeTab === "chat" && (

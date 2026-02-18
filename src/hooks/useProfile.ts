@@ -14,8 +14,13 @@ const defaultProfile: Profile = {
 
 export const useProfile = () => {
   const [profile, setProfile] = useState<Profile>(() => {
-    const stored = localStorage.getItem(PROFILE_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : defaultProfile;
+    try {
+      const stored = localStorage.getItem(PROFILE_STORAGE_KEY);
+      if (stored) return JSON.parse(stored);
+    } catch {
+      // Fall back to default on corrupted data
+    }
+    return defaultProfile;
   });
 
   useEffect(() => {

@@ -14,7 +14,11 @@ import { SettingsDialog } from "./SettingsDialog";
 import { useProfile } from "@/hooks/useProfile";
 import { Link } from "react-router-dom";
 
-export const ProfileMenu = () => {
+interface ProfileMenuProps {
+  onShowPaywall?: () => void;
+}
+
+export const ProfileMenu = ({ onShowPaywall }: ProfileMenuProps) => {
   const { profile } = useProfile();
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -81,9 +85,10 @@ export const ProfileMenu = () => {
         open={showEditProfile} 
         onOpenChange={setShowEditProfile} 
       />
-      <SettingsDialog 
-        open={showSettings} 
-        onOpenChange={setShowSettings} 
+      <SettingsDialog
+        open={showSettings}
+        onOpenChange={setShowSettings}
+        onShowPaywall={onShowPaywall}
       />
     </>
   );

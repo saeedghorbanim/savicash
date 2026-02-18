@@ -81,7 +81,7 @@ export const SubscriptionPaywall = ({
 
   return (
     <div className="fixed inset-0 bg-gradient-to-b from-background to-muted/30 overflow-y-auto overscroll-contain">
-      <div className="flex flex-col items-center justify-start p-6 py-12 pb-safe">
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 py-12 pb-safe">
         {/* App Icon Logo */}
         <div className="mb-2">
           <img 
@@ -107,7 +107,7 @@ export const SubscriptionPaywall = ({
         </div>
 
       {/* Main Card */}
-      <Card className="w-full max-w-sm border-primary/20 shadow-xl">
+      <Card className="w-full max-w-md border-primary/20 shadow-xl">
         <CardHeader className="text-center pb-4">
           <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
             <Crown className="w-8 h-8 text-primary" />
