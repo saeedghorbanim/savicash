@@ -73,15 +73,24 @@ export const usePromptLimit = () => {
   };
 
   // Increment prompt count
+  // Read from localStorage to avoid stale closure issues on rapid calls
   const incrementPromptCount = () => {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
-    
+
+    let current: PromptUsageData | null = null;
+    try {
+      const stored = localStorage.getItem(PROMPT_USAGE_KEY);
+      if (stored) current = JSON.parse(stored);
+    } catch {
+      current = null;
+    }
+
     let newData: PromptUsageData;
-    
+
     // Check if we need to reset for new month
-    if (usageData.month !== currentMonth || usageData.year !== currentYear) {
+    if (!current || current.month !== currentMonth || current.year !== currentYear) {
       newData = {
         count: 1,
         month: currentMonth,
@@ -89,14 +98,14 @@ export const usePromptLimit = () => {
       };
     } else {
       newData = {
-        ...usageData,
-        count: usageData.count + 1,
+        ...current,
+        count: current.count + 1,
       };
     }
-    
+
     localStorage.setItem(PROMPT_USAGE_KEY, JSON.stringify(newData));
     setUsageData(newData);
-    
+
     return newData.count;
   };
 

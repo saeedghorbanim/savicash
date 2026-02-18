@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Camera, X } from "lucide-react";
 import {
   Dialog,
@@ -24,6 +24,14 @@ export const EditProfileDialog = ({ open, onOpenChange }: EditProfileDialogProps
   const [name, setName] = useState(profile.name);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(profile.avatarUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync state with latest profile when dialog opens
+  useEffect(() => {
+    if (open) {
+      setName(profile.name);
+      setAvatarPreview(profile.avatarUrl);
+    }
+  }, [open, profile.name, profile.avatarUrl]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

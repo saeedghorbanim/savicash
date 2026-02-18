@@ -59,7 +59,7 @@ const Terms = () => {
 
             <h2 className="text-lg font-semibold text-foreground mt-6">4. Free Trial</h2>
             <p>
-              Users may track up to 2 expenses for free. After reaching this limit, a subscription is required for continued use.
+              Users may track up to 3 expenses for free. After reaching this limit, a subscription is required for continued use.
             </p>
 
             <h2 className="text-lg font-semibold text-foreground mt-6">5. Cancellation and Refunds</h2>

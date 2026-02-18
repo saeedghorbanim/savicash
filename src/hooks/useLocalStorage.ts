@@ -19,6 +19,7 @@ export interface BudgetLimit {
 
 const EXPENSES_KEY = 'savicash_expenses';
 const BUDGET_KEY = 'savicash_budget';
+const BUDGET_RESET_KEY = 'savicash_budget_last_reset';
 
 export const useLocalStorage = () => {
   const [expenses, setExpenses] = useState<Expense[]>(() => {
@@ -80,7 +81,71 @@ export const useLocalStorage = () => {
     } catch (error) {
       console.error('Failed to load budget from localStorage:', error);
     }
+
+    // Auto-reset monthly budget spending if the month has changed
+    checkAndResetMonthlySpending();
+
+    // Recalculate budget current_spent from actual expenses to fix any drift
+    recalcBudgetFromExpenses();
   }, []);
+
+  // Check if we've entered a new month and reset budget spending
+  const checkAndResetMonthlySpending = () => {
+    const now = new Date();
+    const currentMonthKey = `${now.getFullYear()}-${now.getMonth()}`;
+    const lastReset = localStorage.getItem(BUDGET_RESET_KEY);
+
+    if (lastReset !== currentMonthKey) {
+      localStorage.setItem(BUDGET_RESET_KEY, currentMonthKey);
+
+      // Reset budget current_spent if a budget exists
+      try {
+        const storedBudget = localStorage.getItem(BUDGET_KEY);
+        if (storedBudget) {
+          const parsed = JSON.parse(storedBudget);
+          if (parsed && typeof parsed === 'object' && 'limit_amount' in parsed) {
+            const resetBudget = { ...parsed, current_spent: 0 };
+            localStorage.setItem(BUDGET_KEY, JSON.stringify(resetBudget));
+            setBudget(resetBudget);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to reset monthly spending:', error);
+      }
+    }
+  };
+
+  // Recalculate budget current_spent from actual current-month expenses
+  const recalcBudgetFromExpenses = () => {
+    try {
+      const storedBudget = localStorage.getItem(BUDGET_KEY);
+      const storedExpenses = localStorage.getItem(EXPENSES_KEY);
+      if (!storedBudget || !storedExpenses) return;
+
+      const parsedBudget = JSON.parse(storedBudget);
+      const parsedExpenses = JSON.parse(storedExpenses);
+      if (!parsedBudget || !Array.isArray(parsedExpenses)) return;
+
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
+      const monthlySpent = parsedExpenses
+        .filter((e: Expense) => {
+          const d = new Date(e.created_at);
+          return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+        })
+        .reduce((sum: number, e: Expense) => sum + e.amount, 0);
+
+      if (parsedBudget.current_spent !== monthlySpent) {
+        const corrected = { ...parsedBudget, current_spent: monthlySpent };
+        localStorage.setItem(BUDGET_KEY, JSON.stringify(corrected));
+        setBudget(corrected);
+      }
+    } catch (error) {
+      console.error('Failed to recalculate budget from expenses:', error);
+    }
+  };
 
   // Save expenses
   const saveExpenses = (newExpenses: Expense[]) => {

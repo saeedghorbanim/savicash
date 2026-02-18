@@ -67,8 +67,8 @@ export const loadDemoData = (): { expenses: Expense[]; budget: BudgetLimit } => 
   // Also set usage count to show some usage but not trigger paywall
   const usageData = {
     usageCount: expenses.length,
-    lastUsedAt: new Date().toISOString(),
-    firstUsedAt: new Date().toISOString(),
+    lastUsed: new Date().toISOString(),
+    firstUsed: new Date().toISOString(),
   };
   localStorage.setItem('savicash_app_usage', JSON.stringify(usageData));
   
@@ -76,6 +76,7 @@ export const loadDemoData = (): { expenses: Expense[]; budget: BudgetLimit } => 
   const subscriptionData = {
     isSubscribed: true,
     subscribedAt: new Date().toISOString(),
+    expiresAt: null,
     productId: 'demo_mode',
   };
   localStorage.setItem('savicash_subscription', JSON.stringify(subscriptionData));

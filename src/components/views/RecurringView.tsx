@@ -7,7 +7,7 @@ interface RecurringPattern {
   id: string;
   description: string;
   averageAmount: number;
-  frequency: "weekly" | "monthly";
+  frequency: "weekly" | "biweekly" | "monthly";
   occurrences: number;
   lastOccurrence: Date;
   category: string | null;
@@ -52,11 +52,15 @@ function detectRecurringPatterns(expenses: Expense[]): RecurringPattern[] {
     const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
 
     // Determine frequency
-    let frequency: "weekly" | "monthly" | null = null;
-    
-    // Weekly: every 6-8 days
-    if (avgInterval >= 6 && avgInterval <= 8) {
+    let frequency: "weekly" | "biweekly" | "monthly" | null = null;
+
+    // Weekly: every 5-9 days
+    if (avgInterval >= 5 && avgInterval <= 9) {
       frequency = "weekly";
+    }
+    // Bi-weekly: every 12-16 days
+    else if (avgInterval >= 12 && avgInterval <= 16) {
+      frequency = "biweekly";
     }
     // Monthly: every 25-35 days
     else if (avgInterval >= 25 && avgInterval <= 35) {
@@ -93,17 +97,24 @@ export const RecurringView = ({ expenses }: RecurringViewProps) => {
   // Calculate total monthly cost
   const totalMonthly = patterns.reduce((sum, p) => {
     if (p.frequency === "weekly") {
-      return sum + p.averageAmount * 4.33; // ~4.33 weeks per month
+      return sum + p.averageAmount * (365.25 / 12 / 7); // ~4.345 weeks per month
+    }
+    if (p.frequency === "biweekly") {
+      return sum + p.averageAmount * (365.25 / 12 / 14); // ~2.17 per month
     }
     return sum + p.averageAmount;
   }, 0);
 
-  const getFrequencyLabel = (freq: "weekly" | "monthly") => {
-    return freq === "weekly" ? "Weekly" : "Monthly";
+  const getFrequencyLabel = (freq: "weekly" | "biweekly" | "monthly") => {
+    if (freq === "weekly") return "Weekly";
+    if (freq === "biweekly") return "Bi-weekly";
+    return "Monthly";
   };
 
-  const getFrequencyColor = (freq: "weekly" | "monthly") => {
-    return freq === "weekly" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800";
+  const getFrequencyColor = (freq: "weekly" | "biweekly" | "monthly") => {
+    if (freq === "weekly") return "bg-blue-100 text-blue-800";
+    if (freq === "biweekly") return "bg-purple-100 text-purple-800";
+    return "bg-green-100 text-green-800";
   };
 
   return (
@@ -138,7 +149,8 @@ export const RecurringView = ({ expenses }: RecurringViewProps) => {
           <div className="text-sm">
             <p className="font-medium mb-1">Pattern Detection</p>
             <ul className="text-muted-foreground space-y-1 text-xs">
-              <li>• Finds weekly expenses (every 6-8 days)</li>
+              <li>• Finds weekly expenses (every 5-9 days)</li>
+              <li>• Finds bi-weekly expenses (every 12-16 days)</li>
               <li>• Finds monthly expenses (every 25-35 days)</li>
               <li>• Data stored on your device only</li>
             </ul>

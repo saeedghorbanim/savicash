@@ -100,7 +100,7 @@ export const SubscriptionPaywall = ({
             Unlock Pro
           </h1>
           <p className="text-muted-foreground text-sm">
-            You've used your {FREE_USAGE_LIMIT + 1} free entries.
+            You've used your {FREE_USAGE_LIMIT} free entries.
             <br />
             Subscribe to continue tracking!
           </p>
@@ -215,7 +215,7 @@ export const SubscriptionPaywall = ({
 
         {/* Usage info */}
         <p className="mt-6 text-sm text-muted-foreground mb-8">
-          Expenses logged: {usageCount + 1}/{FREE_USAGE_LIMIT + 1} free
+          Expenses logged: {usageCount}/{FREE_USAGE_LIMIT} free
         </p>
       </div>
     </div>
