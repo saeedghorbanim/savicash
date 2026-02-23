@@ -9,9 +9,9 @@ interface AppHeaderProps {
 export const AppHeader = ({ monthlyTotal, onShowPaywall }: AppHeaderProps) => {
 
   return (
-    <header 
+    <header
       className="bg-gradient-to-r from-primary to-accent px-4 pb-4 text-primary-foreground"
-      style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+      style={{ paddingTop: 'max(env(safe-area-inset-top), 1.5rem)' }}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

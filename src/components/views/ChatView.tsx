@@ -14,6 +14,7 @@ interface ChatViewProps {
   budget: BudgetLimit | null;
   onAddExpense: (expense: Omit<Expense, 'id' | 'created_at'>) => void;
   onSetBudgetLimit: (limitAmount: number) => void;
+  onShowPaywall: () => void;
 }
 
 interface Message {
@@ -36,19 +37,19 @@ const initialMessages: Message[] = [
   },
 ];
 
-// Parse expense from AI response
-function parseExpenseFromResponse(text: string): { amount: number; description: string; category: string } | null {
-  const regex = /\[EXPENSE:([\d.]+):([^:]+):([^\]]+)\]/;
-  const match = text.match(regex);
-  
-  if (match) {
-    return {
+// Parse all expenses from AI response
+function parseExpensesFromResponse(text: string): Array<{ amount: number; description: string; category: string }> {
+  const regex = /\[EXPENSE:([\d.]+):([^:]+):([^\]]+)\]/g;
+  const results: Array<{ amount: number; description: string; category: string }> = [];
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(text)) !== null) {
+    results.push({
       amount: parseFloat(match[1]),
       description: match[2].trim(),
       category: match[3].trim(),
-    };
+    });
   }
-  return null;
+  return results;
 }
 
 // Parse budget command from AI response
@@ -65,24 +66,44 @@ function parseBudgetFromResponse(text: string): { action: 'set' | 'add'; amount:
   return null;
 }
 
-export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit }: ChatViewProps) => {
+export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit, onShowPaywall }: ChatViewProps) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
+  // Local budget state so UI updates immediately without waiting for parent re-render
+  const [localBudget, setLocalBudget] = useState<BudgetLimit | null>(budget);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  
-  const { 
-    hasReachedLimit, 
-    getRemainingPrompts, 
+
+  const {
+    hasReachedLimit,
+    getRemainingPrompts,
     getUsagePercentage,
     incrementPromptCount,
-    getLimitReachedMessage,
     usageData
   } = usePromptLimit();
+
+  // Sync local budget when parent's budget prop changes (e.g. on tab switch / remount)
+  useEffect(() => {
+    setLocalBudget(budget);
+  }, [budget]);
+
+  // Read latest budget from localStorage and update local state immediately
+  const refreshLocalBudget = () => {
+    try {
+      const stored = localStorage.getItem('savicash_budget');
+      if (stored) setLocalBudget(JSON.parse(stored));
+    } catch {}
+  };
+
+  // Wrapper that updates local state immediately, without waiting for parent re-render
+  const handleSetBudgetLimit = (amount: number) => {
+    onSetBudgetLimit(amount);
+    refreshLocalBudget();
+  };
 
   const { isRecording, isProcessing, startRecording, stopRecording } = useVoiceRecording({
     onTranscription: (text) => {
@@ -152,17 +173,7 @@ export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit }: ChatViewPro
 
     // Check if user has reached the monthly prompt limit
     if (hasReachedLimit()) {
-      const limitMessage: Message = {
-        id: Date.now().toString(),
-        content: getLimitReachedMessage(),
-        role: "assistant",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, limitMessage]);
-      toast({
-        title: "Monthly limit reached 📊",
-        description: `You've used all ${MONTHLY_PROMPT_LIMIT} messages for this month.`,
-      });
+      onShowPaywall();
       return;
     }
 
@@ -286,18 +297,28 @@ export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit }: ChatViewPro
       }
 
       // After streaming, check for expense tags and save locally
-      const expense = parseExpenseFromResponse(fullResponseForParsing);
-      if (expense && !receiptData) {
-        onAddExpense({
-          description: expense.description,
-          amount: expense.amount,
-          category: expense.category,
-          store: null,
-        });
-        toast({
-          title: "Expense saved! 💰",
-          description: `$${expense.amount.toFixed(2)} for ${expense.description}`,
-        });
+      const expenses = parseExpensesFromResponse(fullResponseForParsing);
+      if (expenses.length > 0 && !receiptData) {
+        for (const expense of expenses) {
+          onAddExpense({
+            description: expense.description,
+            amount: expense.amount,
+            category: expense.category,
+            store: null,
+          });
+        }
+        if (expenses.length === 1) {
+          toast({
+            title: "Expense saved! 💰",
+            description: `$${expenses[0].amount.toFixed(2)} for ${expenses[0].description}`,
+          });
+        } else {
+          const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+          toast({
+            title: `${expenses.length} expenses saved! 💰`,
+            description: `Total: $${total.toFixed(2)}`,
+          });
+        }
       }
 
       // Check for budget commands and update locally
@@ -305,13 +326,15 @@ export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit }: ChatViewPro
       if (budgetCommand) {
         if (budgetCommand.action === 'set') {
           onSetBudgetLimit(budgetCommand.amount);
+          refreshLocalBudget();
           toast({
             title: "Budget set! 💪",
             description: `Your budget is now $${budgetCommand.amount.toFixed(2)}`,
           });
         } else if (budgetCommand.action === 'add') {
-          const currentLimit = budget?.limit_amount || 0;
+          const currentLimit = localBudget?.limit_amount || 0;
           onSetBudgetLimit(currentLimit + budgetCommand.amount);
+          refreshLocalBudget();
           toast({
             title: "Budget updated! 📈",
             description: `Added $${budgetCommand.amount.toFixed(2)} to your budget`,
@@ -346,7 +369,7 @@ export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit }: ChatViewPro
     <div className="flex flex-col h-full bg-background">
       {/* Budget Tracker */}
       <div className="p-4 pb-2">
-        <BudgetTracker budget={budget} onSetBudget={onSetBudgetLimit} />
+        <BudgetTracker budget={localBudget} onSetBudget={handleSetBudgetLimit} />
       </div>
 
       {/* Monthly Prompt Usage */}

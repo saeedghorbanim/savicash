@@ -71,8 +71,20 @@ const Index = () => {
         currentCount = usageData.usageCount; // Fall back to React state
     }
 
+    // Also read subscription state directly from localStorage to avoid stale React state
+    let isSubscribed = subscription.isSubscribed;
+    try {
+      const subStored = localStorage.getItem('savicash_subscription');
+      if (subStored) {
+        const subParsed = JSON.parse(subStored);
+        isSubscribed = subParsed.isSubscribed === true;
+      }
+    } catch {
+      // Fall back to React state already captured above
+    }
+
     // If already at or past limit (3), show paywall - don't process expense
-    if (!subscription.isSubscribed && currentCount >= FREE_USAGE_LIMIT) {
+    if (!isSubscribed && currentCount >= FREE_USAGE_LIMIT) {
       setShowPaywall(true);
       return;
     }
@@ -129,10 +141,11 @@ const Index = () => {
       
       <div className="flex-1 overflow-hidden pb-20">
         {activeTab === "chat" && (
-          <ChatView 
+          <ChatView
             budget={budget}
             onAddExpense={handleAddExpense}
             onSetBudgetLimit={setBudgetLimit}
+            onShowPaywall={() => setShowPaywall(true)}
           />
         )}
         {activeTab === "stats" && <StatsView expenses={expenses} />}

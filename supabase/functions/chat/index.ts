@@ -37,6 +37,10 @@ EXPENSE Examples:
 - User says "spent $45 on groceries" → Include [EXPENSE:45:groceries:groceries]
 - User says "just got coffee for $5.50" → Include [EXPENSE:5.50:coffee:coffee]
 - User says "uber was $23" → Include [EXPENSE:23:uber:transport]
+- User says "coffee $4 and lunch $12" → Include BOTH [EXPENSE:4:coffee:coffee] [EXPENSE:12:lunch:dining]
+- User says "spent $30 on gas and $50 on groceries" → Include BOTH [EXPENSE:30:gas:transport] [EXPENSE:50:groceries:groceries]
+
+IMPORTANT: If the user mentions multiple expenses in one message, output a separate [EXPENSE:...] tag for EACH one.
 
 BUDGET Examples:
 - User says "set my budget to $500" → Include [BUDGET:set:500]

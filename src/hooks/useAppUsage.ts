@@ -54,7 +54,26 @@ export const useAppUsage = () => {
   // Re-sync from localStorage on mount (handles potential stale state)
   useEffect(() => {
     loadUsageData();
-    loadSubscriptionData();
+
+    // Load and validate subscription data
+    // If stored as subscribed but we're not in a real iOS app (CdvPurchase not present),
+    // clear stale test/dev subscription data so the paywall works correctly.
+    try {
+      const stored = localStorage.getItem(SUBSCRIPTION_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.isSubscribed === true && !window.CdvPurchase) {
+          const cleared = { isSubscribed: false, subscribedAt: null, expiresAt: null, productId: null };
+          localStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(cleared));
+          setSubscription(cleared);
+        } else {
+          setSubscription(parsed);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load subscription data:', error);
+    }
+
     setIsLoading(false);
   }, []);
 
@@ -70,17 +89,6 @@ export const useAppUsage = () => {
     }
   };
 
-  const loadSubscriptionData = () => {
-    try {
-      const stored = localStorage.getItem(SUBSCRIPTION_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setSubscription(parsed);
-      }
-    } catch (error) {
-      console.error('Failed to load subscription data:', error);
-    }
-  };
 
   // Increment usage count (call this when user performs a meaningful action)
   const incrementUsage = () => {
