@@ -65,7 +65,7 @@ export const SubscriptionPaywall = ({
   };
 
   const handleTermsPress = () => {
-    navigate("/terms");
+    window.open("https://www.apple.com/legal/internet-services/itunes/dev/stdeula/", "_blank");
   };
 
   const handlePrivacyPress = () => {
