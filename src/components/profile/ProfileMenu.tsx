@@ -73,10 +73,10 @@ export const ProfileMenu = ({ onShowPaywall }: ProfileMenuProps) => {
             </a>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link to="/privacy" className="flex items-center">
+            <a href="https://actually-stream-310.notion.site/Privacy-Policy-2ebb24b54ac180d9815bca838b4263ee" target="_blank" rel="noopener noreferrer" className="flex items-center">
               <Shield className="mr-2 h-4 w-4" />
               <span>Privacy Policy</span>
-            </Link>
+            </a>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
