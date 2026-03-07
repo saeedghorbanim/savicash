@@ -69,7 +69,7 @@ export const SubscriptionPaywall = ({
   };
 
   const handlePrivacyPress = () => {
-    navigate("/privacy");
+    window.open("https://actually-stream-310.notion.site/Privacy-Policy-2ebb24b54ac180d9815bca838b4263ee", "_blank");
   };
 
   const features = [
