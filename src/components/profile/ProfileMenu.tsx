@@ -12,7 +12,6 @@ import {
 import { EditProfileDialog } from "./EditProfileDialog";
 import { SettingsDialog } from "./SettingsDialog";
 import { useProfile } from "@/hooks/useProfile";
-import { Link } from "react-router-dom";
 
 interface ProfileMenuProps {
   onShowPaywall?: () => void;
