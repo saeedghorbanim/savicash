@@ -197,12 +197,14 @@ export const SubscriptionPaywall = ({
 
           {/* Legal links - Large tappable buttons */}
           <div className="flex justify-center gap-4 pt-2">
-            <button
-              onClick={handleTermsPress}
+            <a
+              href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/"
+              target="_blank"
+              rel="noopener noreferrer"
               className="px-4 py-3 text-sm font-medium text-primary underline underline-offset-4 hover:text-primary/80 active:scale-[0.97] transition-all duration-150 touch-manipulation min-h-[44px] min-w-[44px]"
             >
               Terms of Use
-            </button>
+            </a>
             <button
               onClick={handlePrivacyPress}
               className="px-4 py-3 text-sm font-medium text-primary underline underline-offset-4 hover:text-primary/80 active:scale-[0.97] transition-all duration-150 touch-manipulation min-h-[44px] min-w-[44px]"
