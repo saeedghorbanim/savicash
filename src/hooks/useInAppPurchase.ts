@@ -197,7 +197,7 @@ export const useInAppPurchase = (onPurchaseSuccess?: (productId: string) => void
     if (state.product?.pricing?.price) {
       return state.product.pricing.price;
     }
-    return '$2.99/month'; // Fallback display price
+    return '$2.99'; // Fallback display price
   };
 
   return {
