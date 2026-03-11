@@ -44,20 +44,27 @@ export const useInAppPurchase = (onPurchaseSuccess?: (productId: string) => void
     product: null,
   });
 
-  // Initialize store when component mounts
   useEffect(() => {
-    initializeStore();
+    // Wait for deviceready before initializing (works in both Capacitor and web)
+    const init = () => initializeStore();
+
+    if (typeof window !== 'undefined' && (window as any).cordova) {
+      document.addEventListener('deviceready', init, false);
+      return () => document.removeEventListener('deviceready', init, false);
+    } else {
+      // In web/browser mode, run immediately
+      init();
+    }
   }, []);
 
   const initializeStore = async () => {
-    // Check if we're in a Capacitor/Cordova environment
     if (!window.CdvPurchase) {
       console.log('CdvPurchase not available - running in web mode');
-      setState(prev => ({ 
-        ...prev, 
-        isLoading: false, 
+      setState(prev => ({
+        ...prev,
+        isLoading: false,
         isReady: false,
-        error: 'In-app purchases only available in the iOS app'
+        error: 'In-app purchases only available in the iOS app',
       }));
       return;
     }
@@ -65,7 +72,6 @@ export const useInAppPurchase = (onPurchaseSuccess?: (productId: string) => void
     try {
       const { store, ProductType, Platform, LogLevel } = window.CdvPurchase;
 
-      // Enable debug logging in development
       store.verbosity = LogLevel.DEBUG;
 
       // Register the subscription product
@@ -73,6 +79,19 @@ export const useInAppPurchase = (onPurchaseSuccess?: (productId: string) => void
         id: SUBSCRIPTION_PRODUCT_ID,
         type: ProductType.PAID_SUBSCRIPTION,
         platform: Platform.APPLE_APPSTORE,
+      });
+
+      // Listen for product metadata being loaded from the App Store
+      store.when().productUpdated((product: any) => {
+        if (product.id === SUBSCRIPTION_PRODUCT_ID) {
+          console.log('Product loaded:', product);
+          setState(prev => ({
+            ...prev,
+            isReady: true,
+            isLoading: false,
+            product,
+          }));
+        }
       });
 
       // Handle approved purchases
@@ -84,12 +103,11 @@ export const useInAppPurchase = (onPurchaseSuccess?: (productId: string) => void
         .verified((receipt: any) => {
           console.log('Purchase verified:', receipt);
           receipt.finish();
-          
-          // Call success callback
+
           if (onPurchaseSuccess) {
             onPurchaseSuccess(SUBSCRIPTION_PRODUCT_ID);
           }
-          
+
           setState(prev => ({ ...prev, isPurchasing: false }));
         })
         .finished((transaction: any) => {
@@ -99,31 +117,36 @@ export const useInAppPurchase = (onPurchaseSuccess?: (productId: string) => void
       // Handle errors
       store.error((error: any) => {
         console.error('Store error:', error);
-        setState(prev => ({ 
-          ...prev, 
+        setState(prev => ({
+          ...prev,
           error: error.message || 'Purchase failed',
-          isPurchasing: false 
+          isPurchasing: false,
         }));
       });
 
-      // Initialize the store
+      // Initialize the store — product metadata will load asynchronously
       await store.initialize([Platform.APPLE_APPSTORE]);
 
-      // Get the product
+      // Try to get the product right after init (may already be cached)
       const product = store.get(SUBSCRIPTION_PRODUCT_ID, Platform.APPLE_APPSTORE);
-      
-      setState(prev => ({
-        ...prev,
-        isReady: true,
-        isLoading: false,
-        product,
-      }));
-
+      if (product) {
+        setState(prev => ({
+          ...prev,
+          isReady: true,
+          isLoading: false,
+          product,
+        }));
+      } else {
+        // Product metadata is still loading — productUpdated callback will fire
+        // Keep isLoading: true until it fires
+        console.log('Product not yet available, waiting for productUpdated callback...');
+      }
     } catch (error) {
       console.error('Failed to initialize store:', error);
       setState(prev => ({
         ...prev,
         isLoading: false,
+        isReady: false,
         error: 'Failed to connect to App Store',
       }));
     }
@@ -131,7 +154,12 @@ export const useInAppPurchase = (onPurchaseSuccess?: (productId: string) => void
 
   // Purchase the subscription
   const purchase = useCallback(async () => {
-    if (!window.CdvPurchase || !state.isReady) {
+    if (!window.CdvPurchase) {
+      console.log('CdvPurchase not available');
+      return false;
+    }
+
+    if (!state.isReady) {
       console.log('Store not ready for purchase');
       return false;
     }
@@ -141,12 +169,11 @@ export const useInAppPurchase = (onPurchaseSuccess?: (productId: string) => void
     try {
       const { store, Platform } = window.CdvPurchase;
       const product = store.get(SUBSCRIPTION_PRODUCT_ID, Platform.APPLE_APPSTORE);
-      
+
       if (!product) {
         throw new Error('Product not found');
       }
 
-      // Get the offer and order it
       const offer = product.getOffer();
       if (offer) {
         await store.order(offer);
@@ -157,10 +184,10 @@ export const useInAppPurchase = (onPurchaseSuccess?: (productId: string) => void
       return true;
     } catch (error: any) {
       console.error('Purchase error:', error);
-      setState(prev => ({ 
-        ...prev, 
+      setState(prev => ({
+        ...prev,
         isPurchasing: false,
-        error: error.message || 'Purchase failed' 
+        error: error.message || 'Purchase failed',
       }));
       return false;
     }
@@ -178,15 +205,15 @@ export const useInAppPurchase = (onPurchaseSuccess?: (productId: string) => void
     try {
       const { store } = window.CdvPurchase;
       await store.restorePurchases();
-      
+
       setState(prev => ({ ...prev, isLoading: false }));
       return true;
     } catch (error: any) {
       console.error('Restore error:', error);
-      setState(prev => ({ 
-        ...prev, 
+      setState(prev => ({
+        ...prev,
         isLoading: false,
-        error: error.message || 'Failed to restore purchases' 
+        error: error.message || 'Failed to restore purchases',
       }));
       return false;
     }

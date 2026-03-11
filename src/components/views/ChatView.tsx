@@ -15,6 +15,8 @@ interface ChatViewProps {
   onAddExpense: (expense: Omit<Expense, 'id' | 'created_at'>) => void;
   onSetBudgetLimit: (limitAmount: number) => void;
   onShowPaywall: () => void;
+  shouldShowPaywall: () => boolean;
+  onIncrementUsage: () => void;
 }
 
 interface Message {
@@ -52,21 +54,21 @@ function parseExpensesFromResponse(text: string): Array<{ amount: number; descri
   return results;
 }
 
-// Parse budget command from AI response
-function parseBudgetFromResponse(text: string): { action: 'set' | 'add'; amount: number } | null {
-  const regex = /\[BUDGET:(set|add):([\d.]+)\]/;
-  const match = text.match(regex);
-  
-  if (match) {
-    return {
+// Parse all budget commands from AI response
+function parseBudgetFromResponse(text: string): Array<{ action: 'set' | 'add'; amount: number }> {
+  const regex = /\[BUDGET:(set|add):([\d.]+)\]/g;
+  const results: Array<{ action: 'set' | 'add'; amount: number }> = [];
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(text)) !== null) {
+    results.push({
       action: match[1] as 'set' | 'add',
       amount: parseFloat(match[2]),
-    };
+    });
   }
-  return null;
+  return results;
 }
 
-export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit, onShowPaywall }: ChatViewProps) => {
+export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit, onShowPaywall, shouldShowPaywall, onIncrementUsage }: ChatViewProps) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -79,7 +81,6 @@ export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit, onShowPaywall
   const { toast } = useToast();
 
   const {
-    hasReachedLimit,
     getRemainingPrompts,
     getUsagePercentage,
     incrementPromptCount,
@@ -171,8 +172,8 @@ export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit, onShowPaywall
   const handleSend = async () => {
     if ((!input.trim() && !selectedImage) || isLoading) return;
 
-    // Check if user has reached the monthly prompt limit
-    if (hasReachedLimit()) {
+    // Check if user has reached the free usage limit
+    if (shouldShowPaywall()) {
       onShowPaywall();
       return;
     }
@@ -321,27 +322,47 @@ export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit, onShowPaywall
         }
       }
 
-      // Check for budget commands and update locally
-      const budgetCommand = parseBudgetFromResponse(fullResponseForParsing);
-      if (budgetCommand) {
-        if (budgetCommand.action === 'set') {
-          onSetBudgetLimit(budgetCommand.amount);
-          refreshLocalBudget();
+      // Check for budget commands and update locally (process all commands in order)
+      const budgetCommands = parseBudgetFromResponse(fullResponseForParsing);
+      if (budgetCommands.length > 0) {
+        let runningLimit = localBudget?.limit_amount || 0;
+        let totalAdded = 0;
+        let didSet = false;
+
+        for (const cmd of budgetCommands) {
+          if (cmd.action === 'set') {
+            runningLimit = cmd.amount;
+            didSet = true;
+            totalAdded = 0; // reset additions after a set
+          } else if (cmd.action === 'add') {
+            runningLimit += cmd.amount;
+            totalAdded += cmd.amount;
+          }
+        }
+
+        onSetBudgetLimit(runningLimit);
+        refreshLocalBudget();
+
+        if (didSet && totalAdded > 0) {
+          toast({
+            title: "Budget updated! 💪",
+            description: `Budget set and $${totalAdded.toFixed(2)} added. Total: $${runningLimit.toFixed(2)}`,
+          });
+        } else if (didSet) {
           toast({
             title: "Budget set! 💪",
-            description: `Your budget is now $${budgetCommand.amount.toFixed(2)}`,
+            description: `Your budget is now $${runningLimit.toFixed(2)}`,
           });
-        } else if (budgetCommand.action === 'add') {
-          const currentLimit = localBudget?.limit_amount || 0;
-          onSetBudgetLimit(currentLimit + budgetCommand.amount);
-          refreshLocalBudget();
+        } else {
           toast({
             title: "Budget updated! 📈",
-            description: `Added $${budgetCommand.amount.toFixed(2)} to your budget`,
+            description: `Added $${totalAdded.toFixed(2)} to your budget. Total: $${runningLimit.toFixed(2)}`,
           });
         }
       }
 
+      // Increment free usage once per successful prompt (not per expense)
+      onIncrementUsage();
       // Increment prompt count after successful message
       incrementPromptCount();
       

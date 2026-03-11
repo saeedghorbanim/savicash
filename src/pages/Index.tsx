@@ -90,13 +90,9 @@ const Index = () => {
     }
 
     try {
-    // Increment usage FIRST, then add expense
-    incrementUsage();
-    addExpense(expense);
-    }
-    catch (error) {
+      addExpense(expense);
+    } catch (error) {
       console.error('Error adding expense:', error);
-    // Show error toast to user
     }
   };
 
@@ -146,6 +142,8 @@ const Index = () => {
             onAddExpense={handleAddExpense}
             onSetBudgetLimit={setBudgetLimit}
             onShowPaywall={() => setShowPaywall(true)}
+            shouldShowPaywall={shouldShowPaywall}
+            onIncrementUsage={incrementUsage}
           />
         )}
         {activeTab === "stats" && <StatsView expenses={expenses} />}
