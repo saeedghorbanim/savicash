@@ -8,6 +8,7 @@ import { useVoiceRecording } from "@/hooks/useVoiceRecording";
 import { BudgetTracker } from "@/components/budget/BudgetTracker";
 import { BudgetLimit, Expense } from "@/hooks/useLocalStorage";
 import { usePromptLimit, MONTHLY_PROMPT_LIMIT } from "@/hooks/usePromptLimit";
+import { FREE_USAGE_LIMIT } from "@/hooks/useAppUsage";
 import { Progress } from "@/components/ui/progress";
 
 interface ChatViewProps {
@@ -15,6 +16,7 @@ interface ChatViewProps {
   onAddExpense: (expense: Omit<Expense, 'id' | 'created_at'>) => void;
   onSetBudgetLimit: (limitAmount: number) => void;
   onShowPaywall: () => void;
+  onIncrementUsage: () => void;
 }
 
 interface Message {
@@ -66,7 +68,7 @@ function parseBudgetFromResponse(text: string): { action: 'set' | 'add'; amount:
   return null;
 }
 
-export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit, onShowPaywall }: ChatViewProps) => {
+export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit, onShowPaywall, onIncrementUsage }: ChatViewProps) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -171,8 +173,28 @@ export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit, onShowPaywall
   const handleSend = async () => {
     if ((!input.trim() && !selectedImage) || isLoading) return;
 
-    // Check if user has reached the monthly prompt limit
-    if (hasReachedLimit()) {
+    // Check free usage limit for non-subscribers (3 prompts)
+    // Read directly from localStorage to avoid stale React state
+    let isSubscribed = false;
+    try {
+      const sub = localStorage.getItem('savicash_subscription');
+      if (sub) isSubscribed = JSON.parse(sub).isSubscribed === true;
+    } catch { /* fall through */ }
+
+    if (!isSubscribed) {
+      let count = 0;
+      try {
+        const u = localStorage.getItem('savicash_app_usage');
+        if (u) count = JSON.parse(u).usageCount || 0;
+      } catch { /* fall through */ }
+      if (count >= FREE_USAGE_LIMIT) {
+        onShowPaywall();
+        return;
+      }
+    }
+
+    // Check monthly prompt limit (for subscribers)
+    if (isSubscribed && hasReachedLimit()) {
       onShowPaywall();
       return;
     }
@@ -342,7 +364,12 @@ export const ChatView = ({ budget, onAddExpense, onSetBudgetLimit, onShowPaywall
         }
       }
 
-      // Increment prompt count after successful message
+      // Increment usage after successful message
+      // For non-subscribers: counts toward the 3 free prompt limit
+      // For subscribers: counts toward the monthly prompt limit
+      if (!isSubscribed) {
+        onIncrementUsage();
+      }
       incrementPromptCount();
       
     } catch (error) {

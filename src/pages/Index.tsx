@@ -13,13 +13,16 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("chat");
   const [showPaywall, setShowPaywall] = useState(false);
   const { expenses, budget, deleteExpense, addExpense, setBudgetLimit } = useLocalStorage();
-  const { 
+  const {
     usageData,
     subscription,
     isLoading: usageLoading,
     incrementUsage,
     setSubscriptionActive
   } = useAppUsage();
+
+  // Exposed to ChatView so it can increment usage per prompt (not per expense save)
+  const handleIncrementUsage = incrementUsage;
 
   // Check paywall status on load and when usage changes
   useEffect(() => {
@@ -90,8 +93,7 @@ const Index = () => {
     }
 
     try {
-    // Increment usage FIRST, then add expense
-    incrementUsage();
+    // Add expense (usage is now incremented per prompt in ChatView, not per expense save)
     addExpense(expense);
     }
     catch (error) {
@@ -102,7 +104,7 @@ const Index = () => {
 
   // Handle successful subscription
   const handleSubscriptionSuccess = () => {
-    setSubscriptionActive('savicash_monthly_299');
+    setSubscriptionActive('com.savicash.subscription.monthly');
     setShowPaywall(false);
   };
   
@@ -146,6 +148,7 @@ const Index = () => {
             onAddExpense={handleAddExpense}
             onSetBudgetLimit={setBudgetLimit}
             onShowPaywall={() => setShowPaywall(true)}
+            onIncrementUsage={handleIncrementUsage}
           />
         )}
         {activeTab === "stats" && <StatsView expenses={expenses} />}

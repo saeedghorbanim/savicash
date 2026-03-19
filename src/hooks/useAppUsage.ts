@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Purchases } from '@revenuecat/purchases-capacitor';
+import { Capacitor } from '@capacitor/core';
 
 const USAGE_KEY = 'savicash_app_usage';
 const SUBSCRIPTION_KEY = 'savicash_subscription';
@@ -55,26 +57,46 @@ export const useAppUsage = () => {
   useEffect(() => {
     loadUsageData();
 
-    // Load and validate subscription data
-    // If stored as subscribed but we're not in a real iOS app (CdvPurchase not present),
-    // clear stale test/dev subscription data so the paywall works correctly.
-    try {
-      const stored = localStorage.getItem(SUBSCRIPTION_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.isSubscribed === true && !window.CdvPurchase) {
+    // Load and validate subscription data against RevenueCat as source of truth.
+    // On web/simulator: always clear stored subscription (no IAP available).
+    // On native: verify entitlement with RevenueCat; clear if no longer active.
+    const validateSubscription = async () => {
+      try {
+        const stored = localStorage.getItem(SUBSCRIPTION_KEY);
+        const parsed = stored ? JSON.parse(stored) : null;
+
+        if (!Capacitor.isNativePlatform()) {
+          // Web or simulator — no real IAP, clear any stored subscription
           const cleared = { isSubscribed: false, subscribedAt: null, expiresAt: null, productId: null };
           localStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(cleared));
           setSubscription(cleared);
-        } else {
+        } else if (parsed?.isSubscribed === true) {
+          // Native platform — verify entitlement is still active with RevenueCat
+          try {
+            const { customerInfo } = await Purchases.getCustomerInfo();
+            if (customerInfo.entitlements.active['premium']) {
+              setSubscription(parsed);
+            } else {
+              const cleared = { isSubscribed: false, subscribedAt: null, expiresAt: null, productId: null };
+              localStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(cleared));
+              setSubscription(cleared);
+            }
+          } catch (rcError) {
+            console.error('Failed to verify subscription with RevenueCat:', rcError);
+            // On RC error, trust local storage to avoid wrongly blocking a subscriber
+            setSubscription(parsed);
+          }
+        } else if (parsed) {
           setSubscription(parsed);
         }
+      } catch (error) {
+        console.error('Failed to load subscription data:', error);
       }
-    } catch (error) {
-      console.error('Failed to load subscription data:', error);
-    }
 
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+
+    validateSubscription();
   }, []);
 
   const loadUsageData = () => {

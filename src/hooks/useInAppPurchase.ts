@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor';
+import { Capacitor } from '@capacitor/core';
 
-// Product ID - You'll set this up in App Store Connect
-export const SUBSCRIPTION_PRODUCT_ID = 'savicash_monthly_299';
+export const SUBSCRIPTION_PRODUCT_ID = 'com.savicash.subscription.monthly';
+const IOS_API_KEY = 'appl_ChPeCdvSgGrcwaOGJskFxAVDwhc';
+const ENTITLEMENT_ID = 'premium';
 
 interface PurchaseState {
   isReady: boolean;
@@ -9,30 +12,6 @@ interface PurchaseState {
   isPurchasing: boolean;
   error: string | null;
   product: any | null;
-}
-
-// Type definitions for CdvPurchase
-declare global {
-  interface Window {
-    CdvPurchase?: {
-      store: any;
-      ProductType: {
-        PAID_SUBSCRIPTION: string;
-        CONSUMABLE: string;
-        NON_CONSUMABLE: string;
-      };
-      Platform: {
-        APPLE_APPSTORE: string;
-        GOOGLE_PLAY: string;
-      };
-      LogLevel: {
-        DEBUG: number;
-        INFO: number;
-        WARNING: number;
-        ERROR: number;
-      };
-    };
-  }
 }
 
 export const useInAppPurchase = (onPurchaseSuccess?: (productId: string) => void) => {
@@ -44,83 +23,40 @@ export const useInAppPurchase = (onPurchaseSuccess?: (productId: string) => void
     product: null,
   });
 
-  // Initialize store when component mounts
   useEffect(() => {
-    initializeStore();
+    initializeRevenueCat();
   }, []);
 
-  const initializeStore = async () => {
-    // Check if we're in a Capacitor/Cordova environment
-    if (!window.CdvPurchase) {
-      console.log('CdvPurchase not available - running in web mode');
-      setState(prev => ({ 
-        ...prev, 
-        isLoading: false, 
+  const initializeRevenueCat = async () => {
+    if (!Capacitor.isNativePlatform()) {
+      console.log('RevenueCat not available - running in web mode');
+      setState(prev => ({
+        ...prev,
+        isLoading: false,
         isReady: false,
-        error: 'In-app purchases only available in the iOS app'
+        error: 'In-app purchases only available in the iOS app',
       }));
       return;
     }
 
     try {
-      const { store, ProductType, Platform, LogLevel } = window.CdvPurchase;
+      await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
+      await Purchases.configure({ apiKey: IOS_API_KEY });
 
-      // Enable debug logging in development
-      store.verbosity = LogLevel.DEBUG;
+      const { offerings } = await Purchases.getOfferings();
+      const monthlyPackage =
+        offerings.current?.availablePackages.find(
+          (pkg) => pkg.product.identifier === SUBSCRIPTION_PRODUCT_ID
+        ) ?? offerings.current?.availablePackages[0] ?? null;
 
-      // Register the subscription product
-      store.register({
-        id: SUBSCRIPTION_PRODUCT_ID,
-        type: ProductType.PAID_SUBSCRIPTION,
-        platform: Platform.APPLE_APPSTORE,
-      });
-
-      // Handle approved purchases
-      store.when()
-        .approved((transaction: any) => {
-          console.log('Purchase approved:', transaction);
-          transaction.verify();
-        })
-        .verified((receipt: any) => {
-          console.log('Purchase verified:', receipt);
-          receipt.finish();
-          
-          // Call success callback
-          if (onPurchaseSuccess) {
-            onPurchaseSuccess(SUBSCRIPTION_PRODUCT_ID);
-          }
-          
-          setState(prev => ({ ...prev, isPurchasing: false }));
-        })
-        .finished((transaction: any) => {
-          console.log('Purchase finished:', transaction);
-        });
-
-      // Handle errors
-      store.error((error: any) => {
-        console.error('Store error:', error);
-        setState(prev => ({ 
-          ...prev, 
-          error: error.message || 'Purchase failed',
-          isPurchasing: false 
-        }));
-      });
-
-      // Initialize the store
-      await store.initialize([Platform.APPLE_APPSTORE]);
-
-      // Get the product
-      const product = store.get(SUBSCRIPTION_PRODUCT_ID, Platform.APPLE_APPSTORE);
-      
       setState(prev => ({
         ...prev,
         isReady: true,
         isLoading: false,
-        product,
+        product: monthlyPackage,
       }));
-
-    } catch (error) {
-      console.error('Failed to initialize store:', error);
+    } catch (error: any) {
+      console.error('Failed to initialize RevenueCat:', error);
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -129,75 +65,70 @@ export const useInAppPurchase = (onPurchaseSuccess?: (productId: string) => void
     }
   };
 
-  // Purchase the subscription
   const purchase = useCallback(async () => {
-    if (!window.CdvPurchase || !state.isReady) {
-      console.log('Store not ready for purchase');
+    if (!state.isReady || !state.product) {
+      console.log('RevenueCat not ready for purchase');
       return false;
     }
 
     setState(prev => ({ ...prev, isPurchasing: true, error: null }));
 
     try {
-      const { store, Platform } = window.CdvPurchase;
-      const product = store.get(SUBSCRIPTION_PRODUCT_ID, Platform.APPLE_APPSTORE);
-      
-      if (!product) {
-        throw new Error('Product not found');
+      const { customerInfo } = await Purchases.purchasePackage({ aPackage: state.product });
+
+      if (customerInfo.entitlements.active[ENTITLEMENT_ID]) {
+        onPurchaseSuccess?.(SUBSCRIPTION_PRODUCT_ID);
+        setState(prev => ({ ...prev, isPurchasing: false }));
+        return true;
       }
 
-      // Get the offer and order it
-      const offer = product.getOffer();
-      if (offer) {
-        await store.order(offer);
-      } else {
-        throw new Error('No offer available for this product');
-      }
-
-      return true;
+      setState(prev => ({ ...prev, isPurchasing: false }));
+      return false;
     } catch (error: any) {
       console.error('Purchase error:', error);
-      setState(prev => ({ 
-        ...prev, 
+      const userCancelled = error.userCancelled === true;
+      setState(prev => ({
+        ...prev,
         isPurchasing: false,
-        error: error.message || 'Purchase failed' 
+        error: userCancelled ? null : (error.message || 'Purchase failed'),
       }));
       return false;
     }
-  }, [state.isReady]);
+  }, [state.isReady, state.product, onPurchaseSuccess]);
 
-  // Restore previous purchases
   const restore = useCallback(async () => {
-    if (!window.CdvPurchase || !state.isReady) {
-      console.log('Store not ready for restore');
+    if (!state.isReady) {
+      console.log('RevenueCat not ready for restore');
       return false;
     }
 
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const { store } = window.CdvPurchase;
-      await store.restorePurchases();
-      
+      const { customerInfo } = await Purchases.restorePurchases();
+
+      if (customerInfo.entitlements.active[ENTITLEMENT_ID]) {
+        onPurchaseSuccess?.(SUBSCRIPTION_PRODUCT_ID);
+      }
+
       setState(prev => ({ ...prev, isLoading: false }));
       return true;
     } catch (error: any) {
       console.error('Restore error:', error);
-      setState(prev => ({ 
-        ...prev, 
+      setState(prev => ({
+        ...prev,
         isLoading: false,
-        error: error.message || 'Failed to restore purchases' 
+        error: error.message || 'Failed to restore purchases',
       }));
       return false;
     }
-  }, [state.isReady]);
+  }, [state.isReady, onPurchaseSuccess]);
 
-  // Get formatted price
   const getFormattedPrice = () => {
-    if (state.product?.pricing?.price) {
-      return state.product.pricing.price;
+    if (state.product?.product?.priceString) {
+      return state.product.product.priceString;
     }
-    return '$2.99'; // Fallback display price
+    return '$2.99';
   };
 
   return {
