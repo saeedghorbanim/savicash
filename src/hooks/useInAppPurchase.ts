@@ -3,7 +3,7 @@ import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor';
 import { Capacitor } from '@capacitor/core';
 
 export const SUBSCRIPTION_PRODUCT_ID = 'com.savicash.subscription.monthly';
-const IOS_API_KEY = 'appl_ChPeCdvSgGrcwaOGJskFxAVDwhc';
+const IOS_API_KEY = import.meta.env.VITE_REVENUECAT_IOS_API_KEY || 'test_AjaYIMAOYeAKTfhbriMTHVAcDqp';
 const ENTITLEMENT_ID = 'premium';
 
 interface PurchaseState {
