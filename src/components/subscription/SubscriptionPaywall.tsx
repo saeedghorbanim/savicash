@@ -24,14 +24,15 @@ export const SubscriptionPaywall = ({
     onSubscriptionSuccess();
   };
 
-  const { 
-    isReady, 
-    isLoading, 
-    isPurchasing, 
-    error, 
-    purchase, 
+  const {
+    isReady,
+    isLoading,
+    isPurchasing,
+    error,
+    product,
+    purchase,
     restore,
-    getFormattedPrice 
+    getFormattedPrice
   } = useInAppPurchase(handlePurchaseSuccess);
 
   const handleSubscribe = async () => {
@@ -39,10 +40,12 @@ export const SubscriptionPaywall = ({
     toast.loading("Connecting to App Store...", { id: "purchase" });
     
     const success = await purchase();
-    
+
     if (!success) {
       if (!isReady) {
         toast.error("Unable to connect to App Store. Please try again.", { id: "purchase" });
+      } else if (!product) {
+        toast.error("Subscription product unavailable. Please try again later.", { id: "purchase" });
       } else if (error) {
         toast.error(error, { id: "purchase" });
       } else {

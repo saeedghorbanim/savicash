@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor';
+import { Purchases } from '@revenuecat/purchases-capacitor';
 import { Capacitor } from '@capacitor/core';
 
 export const SUBSCRIPTION_PRODUCT_ID = 'com.savicash.subscription.monthly';
-const IOS_API_KEY = import.meta.env.VITE_REVENUECAT_IOS_API_KEY || 'test_AjaYIMAOYeAKTfhbriMTHVAcDqp';
 const ENTITLEMENT_ID = 'premium';
 
 interface PurchaseState {
@@ -40,14 +39,24 @@ export const useInAppPurchase = (onPurchaseSuccess?: (productId: string) => void
     }
 
     try {
-      await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
-      await Purchases.configure({ apiKey: IOS_API_KEY });
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const result = await Purchases.getOfferings();
+      console.log('[RC] raw offerings object:', JSON.stringify(result));
 
-      const { offerings } = await Purchases.getOfferings();
+      // The Capacitor plugin returns { offerings: { current: {...}, all: {...} } }
+      // or sometimes the data is nested — try both:
+      const offerings = result?.offerings ?? result;
+      const currentOffering = offerings?.current;
       const monthlyPackage =
-        offerings.current?.availablePackages.find(
-          (pkg) => pkg.product.identifier === SUBSCRIPTION_PRODUCT_ID
-        ) ?? offerings.current?.availablePackages[0] ?? null;
+        currentOffering?.monthly
+        ?? currentOffering?.availablePackages?.find(p => p.identifier === '$rc_monthly')
+        ?? currentOffering?.availablePackages?.find(
+          (pkg) => pkg.product?.identifier === SUBSCRIPTION_PRODUCT_ID
+        )
+        ?? currentOffering?.availablePackages?.[0]
+        ?? null;
+
+      console.log('[RC] monthly package:', JSON.stringify(monthlyPackage));
 
       setState(prev => ({
         ...prev,
