@@ -34,9 +34,19 @@ All user data (expenses, budget, usage count, subscription status) lives in **br
 ### Key Directories
 
 - `src/components/views/` — The four main tab views: Chat, Stats, Recurring, History
+- `src/components/onboarding/` — First-run onboarding screens (shell, question/insight step renderers, chart insights)
 - `src/components/ui/` — shadcn-ui component library (don't modify these)
 - `src/hooks/` — All state management; localStorage reads are synchronous to avoid race conditions
 - `src/integrations/supabase/` — Supabase client configuration and generated types
+
+### Onboarding Flow
+
+- Gated in `src/App.tsx` on `useOnboarding().hasCompletedOnboarding` (localStorage key `savicash_onboarding`): the root route renders `Onboarding` instead of `Index` until it's marked complete
+- `src/pages/Onboarding.tsx` drives one flat, data-driven array of 17 steps: 3 welcome slides → a branded "Get Started" / "Already got an account? Log in" screen → 10 personalization questions → 3 chart/insight payoff slides
+- "Log in" is **not** a real auth system — this app has none. It calls the existing RevenueCat restore-purchases flow (`useInAppPurchase`); on a found entitlement it marks onboarding complete and skips straight to `Index`
+- Answers (`OnboardingAnswers`) are persisted incrementally to localStorage as each question is answered, and are only used to personalize the 3 insight pages (spending breakdown chart, savings projection chart) — never wired into `useLocalStorage`'s real `Expense`/`BudgetLimit` records
+- `framer-motion` was added for onboarding page transitions and staggered reveals — it's the first animation library in the codebase; existing Tailwind keyframes (`fade-in`, `slide-in`, `float`, `pulse-glow`) are still used for decorative/infinite-loop effects
+- The 3 insight pages are the first real usage of `recharts` / `src/components/ui/chart.tsx` in the app (previously installed but unused)
 
 ### Freemium / Subscription Model
 
@@ -44,6 +54,7 @@ All user data (expenses, budget, usage count, subscription status) lives in **br
 - Tracked via `usageCount` in localStorage, managed by `useAppUsage` and `usePromptLimit` hooks
 - RevenueCat (`@revenuecat/purchases-capacitor`) handles IAP; product ID: `com.savicash.subscription.monthly`
 - Paywall only activates on native mobile platforms (iOS/Android); subscription state is cleared on web/simulator
+- **The paywall is action-triggered only** — `Index.tsx` never auto-shows it on mount/app launch. It's shown only when a gated action is attempted past the free limit: `ChatView.handleSend` (sending a prompt) and `Index.handleAddExpense` (adding an expense) both read usage/subscription directly from localStorage at the moment of the action. This means a fresh cold launch (full force-quit + relaunch) always lands on the main Chat tab; the paywall reappears the instant the user tries to exceed the limit again
 - **Important race condition fix:** Usage count must be checked, then incremented, then the AI call made — all in sequence to ensure exactly 3 free prompts are allowed
 
 #### RevenueCat Configuration
@@ -58,6 +69,7 @@ The app uses localStorage-backed custom hooks rather than a global store:
 - `useLocalStorage` — Expenses and budget with month-aware auto-reset
 - `useAppUsage` — Subscription status and usage count
 - `usePromptLimit` — Free prompt enforcement
+- `useOnboarding` — First-run onboarding completion flag and collected answers
 
 Budget recalculates from the expense list on each update (rather than storing a running total) to prevent drift.
 

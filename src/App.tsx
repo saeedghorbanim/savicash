@@ -5,10 +5,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
+import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import SplashScreen from "./components/SplashScreen";
 import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor';
 import { Capacitor } from '@capacitor/core';
+import { useOnboarding } from "@/hooks/useOnboarding";
 
 const IOS_API_KEY = import.meta.env.VITE_REVENUECAT_IOS_KEY;
 
@@ -16,6 +18,7 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
+  const { hasCompletedOnboarding, answers, updateAnswer, completeOnboarding } = useOnboarding();
 
   useEffect(() => {
     const initRevenueCat = async () => {
@@ -38,7 +41,16 @@ const App = () => {
         )}
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route
+              path="/"
+              element={
+                hasCompletedOnboarding ? (
+                  <Index />
+                ) : (
+                  <Onboarding answers={answers} updateAnswer={updateAnswer} onComplete={completeOnboarding} />
+                )
+              }
+            />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

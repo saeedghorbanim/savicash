@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { ChatView } from "@/components/views/ChatView";
@@ -23,39 +23,6 @@ const Index = () => {
 
   // Exposed to ChatView so it can increment usage per prompt (not per expense save)
   const handleIncrementUsage = incrementUsage;
-
-  // Check paywall status on load and when usage changes
-  useEffect(() => {
-    if (usageLoading) return;
-  
-    // Check if should show paywall
-    if (shouldShowPaywall()) {
-      setShowPaywall(true);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [usageLoading, usageData.usageCount, subscription.isSubscribed]);
-
-  // Check if user should see paywall BEFORE performing an action
-  // CRITICAL: Read directly from localStorage to avoid stale React state on mobile
-  // The logic: if usageCount >= FREE_USAGE_LIMIT (3), show paywall
-  // This means: 0, 1, 2 are free uses. At 3, paywall shows.
-  const shouldShowPaywall = () => {
-    if (subscription.isSubscribed) return false;
-    
-    // Read current count from localStorage to prevent stale state issues
-    try {
-      const stored = localStorage.getItem('savicash_app_usage');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        const currentCount = typeof parsed.usageCount === 'number' ? parsed.usageCount : 0;
-        // Show paywall when user has already used all free entries
-        return currentCount >= FREE_USAGE_LIMIT;
-      }
-    } catch {
-      // Fall back to React state
-    }
-    return usageData.usageCount >= FREE_USAGE_LIMIT;
-  };
 
   // Wrapped addExpense that tracks usage
   // CRITICAL: Read localStorage synchronously to prevent race conditions on mobile
