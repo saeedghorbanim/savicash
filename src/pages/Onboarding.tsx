@@ -8,6 +8,8 @@ import { WelcomeSlide } from "@/components/onboarding/steps/WelcomeSlide";
 import { GetStartedSlide } from "@/components/onboarding/steps/GetStartedSlide";
 import { QuestionSlide, type QuestionConfig, type QuestionValue } from "@/components/onboarding/steps/QuestionSlide";
 import { InsightSlide } from "@/components/onboarding/steps/InsightSlide";
+import { CalculatingSlide } from "@/components/onboarding/steps/CalculatingSlide";
+import { ResultsSlide } from "@/components/onboarding/steps/ResultsSlide";
 import { SpendingBreakdownInsight } from "@/components/onboarding/insights/SpendingBreakdownInsight";
 import { SavingsProjectionInsight } from "@/components/onboarding/insights/SavingsProjectionInsight";
 import { HowItWorksInsight } from "@/components/onboarding/insights/HowItWorksInsight";
@@ -25,7 +27,9 @@ type OnboardingStep =
   | { kind: "welcome"; icon: LucideIcon; title: string; subtitle: string; accent: "primary" | "success" }
   | { kind: "getstarted" }
   | (QuestionConfig & { kind: "question"; required: boolean })
-  | { kind: "insight"; title: string; subtitle: string; Component: React.ComponentType<{ answers: OnboardingAnswers }> };
+  | { kind: "insight"; title: string; subtitle: string; Component: React.ComponentType<{ answers: OnboardingAnswers }> }
+  | { kind: "calculating" }
+  | { kind: "results" };
 
 const CATEGORY_OPTIONS = [
   { value: "groceries", label: "Groceries" },
@@ -44,9 +48,9 @@ const QUESTIONS: (QuestionConfig & { required: boolean })[] = [
   {
     id: "gender",
     question: "What's your gender?",
-    helper: "Optional — helps us tailor tips for you.",
+    helper: "Helps us tailor tips for you.",
     inputType: "single-select",
-    required: false,
+    required: true,
     options: [
       { value: "female", label: "Female" },
       { value: "male", label: "Male" },
@@ -71,9 +75,9 @@ const QUESTIONS: (QuestionConfig & { required: boolean })[] = [
   {
     id: "incomeRange",
     question: "What's your income range?",
-    helper: "Optional — used only to personalize your savings targets.",
+    helper: "Used only to personalize your savings targets.",
     inputType: "single-select",
-    required: false,
+    required: true,
     options: [
       { value: "under_25k", label: "Under $25k/yr" },
       { value: "25k_50k", label: "$25k–$50k/yr" },
@@ -206,9 +210,12 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     subtitle: "Here's how SaviCash keeps you on track.",
     Component: HowItWorksInsight,
   },
+  { kind: "calculating" },
+  { kind: "results" },
 ];
 
 const QUESTION_INSIGHT_STEPS = ONBOARDING_STEPS.filter((s) => s.kind === "question" || s.kind === "insight");
+const GETSTARTED_INDEX = ONBOARDING_STEPS.findIndex((s) => s.kind === "getstarted");
 
 const pageVariants = {
   enter: (dir: number) => ({ opacity: 0, x: dir * 24 }),
@@ -249,6 +256,11 @@ const Onboarding = ({ answers, updateAnswer, onComplete }: OnboardingProps) => {
     setCurrentIndex((i) => Math.max(0, i - 1));
   };
 
+  const goToGetStarted = () => {
+    setDirection(1);
+    setCurrentIndex(GETSTARTED_INDEX);
+  };
+
   const handleRestoreLogin = async () => {
     foundSubscriptionRef.current = false;
     toast.loading("Restoring purchases...", { id: "onboarding-restore" });
@@ -282,12 +294,20 @@ const Onboarding = ({ answers, updateAnswer, onComplete }: OnboardingProps) => {
             <step.Component answers={answers} />
           </InsightSlide>
         );
+      case "calculating":
+        return <CalculatingSlide onDone={goNext} />;
+      case "results":
+        return <ResultsSlide answers={answers} />;
       default:
         return null;
     }
   };
 
   const renderFooter = () => {
+    if (step.kind === "calculating") {
+      return null;
+    }
+
     if (step.kind === "getstarted") {
       return (
         <div className="flex flex-col gap-3">
@@ -308,6 +328,19 @@ const Onboarding = ({ answers, updateAnswer, onComplete }: OnboardingProps) => {
       );
     }
 
+    if (step.kind === "welcome") {
+      return (
+        <div className="flex flex-col gap-2">
+          <Button size="lg" className="w-full h-14 text-lg font-semibold" onClick={goNext}>
+            Continue
+          </Button>
+          <Button variant="ghost" className="text-muted-foreground" onClick={goToGetStarted}>
+            Skip
+          </Button>
+        </div>
+      );
+    }
+
     return (
       <Button size="lg" className="w-full h-14 text-lg font-semibold" onClick={goNext} disabled={!canContinue}>
         {isLastStep ? "Start Saving" : "Continue"}
@@ -315,8 +348,10 @@ const Onboarding = ({ answers, updateAnswer, onComplete }: OnboardingProps) => {
     );
   };
 
+  const showBack = currentIndex > 0 && step.kind !== "calculating" && step.kind !== "results";
+
   return (
-    <OnboardingShell onBack={currentIndex > 0 ? goBack : undefined} progress={progress} dots={dots} footer={renderFooter()}>
+    <OnboardingShell onBack={showBack ? goBack : undefined} progress={progress} dots={dots} footer={renderFooter()}>
       <AnimatePresence mode="wait" custom={direction}>
         <motion.div
           key={currentIndex}

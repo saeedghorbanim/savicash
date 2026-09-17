@@ -48,13 +48,21 @@ const defaultState: OnboardingState = {
   answers: defaultAnswers,
 };
 
+// TEMPORARY (testing): every fresh app launch always starts from the
+// onboarding welcome screen, regardless of subscription status or a prior
+// completion. Remove this override — and restore
+// `hasCompletedOnboarding: parsed.hasCompletedOnboarding === true` — once
+// the RevenueCat paywall is fully configured and this no longer needs to
+// be forced open for testing.
+const FORCE_ONBOARDING_ON_LAUNCH = true;
+
 const readStoredState = (): OnboardingState => {
   try {
     const stored = localStorage.getItem(ONBOARDING_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
       return {
-        hasCompletedOnboarding: parsed.hasCompletedOnboarding === true,
+        hasCompletedOnboarding: FORCE_ONBOARDING_ON_LAUNCH ? false : parsed.hasCompletedOnboarding === true,
         completedAt: parsed.completedAt || null,
         answers: { ...defaultAnswers, ...parsed.answers },
       };

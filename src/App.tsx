@@ -11,6 +11,8 @@ import SplashScreen from "./components/SplashScreen";
 import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor';
 import { Capacitor } from '@capacitor/core';
 import { useOnboarding } from "@/hooks/useOnboarding";
+import { useAppUsage } from "@/hooks/useAppUsage";
+import { HardPaywallGate } from "@/components/subscription/HardPaywallGate";
 
 const IOS_API_KEY = import.meta.env.VITE_REVENUECAT_IOS_KEY;
 
@@ -19,6 +21,7 @@ const queryClient = new QueryClient();
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
   const { hasCompletedOnboarding, answers, updateAnswer, completeOnboarding } = useOnboarding();
+  const { subscription, isLoading: subscriptionLoading, setSubscriptionActive } = useAppUsage();
 
   useEffect(() => {
     const initRevenueCat = async () => {
@@ -31,6 +34,20 @@ const App = () => {
     initRevenueCat();
   }, []);
 
+  // No free tier: once onboarding is done, a native build requires an active
+  // subscription before reaching the app. Web/simulator bypasses this (no
+  // real IAP there) so local development stays usable.
+  let mainContent;
+  if (!hasCompletedOnboarding) {
+    mainContent = <Onboarding answers={answers} updateAnswer={updateAnswer} onComplete={completeOnboarding} />;
+  } else if (subscriptionLoading) {
+    mainContent = <div className="fixed inset-0 bg-gradient-to-b from-background to-muted/30" />;
+  } else if (Capacitor.isNativePlatform() && !subscription.isSubscribed) {
+    mainContent = <HardPaywallGate onSubscribed={setSubscriptionActive} />;
+  } else {
+    mainContent = <Index />;
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -41,16 +58,7 @@ const App = () => {
         )}
         <BrowserRouter>
           <Routes>
-            <Route
-              path="/"
-              element={
-                hasCompletedOnboarding ? (
-                  <Index />
-                ) : (
-                  <Onboarding answers={answers} updateAnswer={updateAnswer} onComplete={completeOnboarding} />
-                )
-              }
-            />
+            <Route path="/" element={mainContent} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

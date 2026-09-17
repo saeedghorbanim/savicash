@@ -63,16 +63,8 @@ export const loadDemoData = (): { expenses: Expense[]; budget: BudgetLimit } => 
   // Save to localStorage
   localStorage.setItem('savicash_expenses', JSON.stringify(expenses));
   localStorage.setItem('savicash_budget', JSON.stringify(budget));
-  
-  // Also set usage count to show some usage but not trigger paywall
-  const usageData = {
-    usageCount: expenses.length,
-    lastUsed: new Date().toISOString(),
-    firstUsed: new Date().toISOString(),
-  };
-  localStorage.setItem('savicash_app_usage', JSON.stringify(usageData));
-  
-  // Set as subscribed so paywall doesn't show
+
+  // Set as subscribed so the paywall doesn't show
   const subscriptionData = {
     isSubscribed: true,
     subscribedAt: new Date().toISOString(),
@@ -88,6 +80,5 @@ export const loadDemoData = (): { expenses: Expense[]; budget: BudgetLimit } => 
 export const clearDemoData = () => {
   localStorage.removeItem('savicash_expenses');
   localStorage.removeItem('savicash_budget');
-  localStorage.removeItem('savicash_app_usage');
   localStorage.removeItem('savicash_subscription');
 };

@@ -6,80 +6,27 @@ import { StatsView } from "@/components/views/StatsView";
 import { RecurringView } from "@/components/views/RecurringView";
 import { HistoryView } from "@/components/views/HistoryView";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { useAppUsage, FREE_USAGE_LIMIT } from "@/hooks/useAppUsage";
-import { SubscriptionPaywall } from "@/components/subscription/SubscriptionPaywall";
+import { useAppUsage } from "@/hooks/useAppUsage";
+import { usePaywall } from "@/hooks/usePaywall";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("chat");
-  const [showPaywall, setShowPaywall] = useState(false);
   const { expenses, budget, deleteExpense, addExpense, setBudgetLimit } = useLocalStorage();
-  const {
-    usageData,
-    subscription,
-    isLoading: usageLoading,
-    incrementUsage,
-    setSubscriptionActive
-  } = useAppUsage();
+  const { setSubscriptionActive } = useAppUsage();
+  const { presentPaywall } = usePaywall(setSubscriptionActive);
 
-  // Exposed to ChatView so it can increment usage per prompt (not per expense save)
-  const handleIncrementUsage = incrementUsage;
-
-  // Wrapped addExpense that tracks usage
-  // CRITICAL: Read localStorage synchronously to prevent race conditions on mobile
-  const handleAddExpense = (expense: Parameters<typeof addExpense>[0]) => {
-    // CRITICAL: Read current count directly from localStorage at decision time
-    // This prevents stale React state from allowing extra free entries
-    let currentCount = 0;
-    try {
-      const stored = localStorage.getItem('savicash_app_usage');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        currentCount = typeof parsed.usageCount === 'number' ? parsed.usageCount : 0;
-      }
-    } catch (error) {
-        console.error('Error reading usage count:', error);
-        currentCount = usageData.usageCount; // Fall back to React state
-    }
-
-    // Also read subscription state directly from localStorage to avoid stale React state
-    let isSubscribed = subscription.isSubscribed;
-    try {
-      const subStored = localStorage.getItem('savicash_subscription');
-      if (subStored) {
-        const subParsed = JSON.parse(subStored);
-        isSubscribed = subParsed.isSubscribed === true;
-      }
-    } catch {
-      // Fall back to React state already captured above
-    }
-
-    // If already at or past limit (3), show paywall - don't process expense
-    if (!isSubscribed && currentCount >= FREE_USAGE_LIMIT) {
-      setShowPaywall(true);
-      return;
-    }
-
-    try {
-    // Add expense (usage is now incremented per prompt in ChatView, not per expense save)
-    addExpense(expense);
-    }
-    catch (error) {
-      console.error('Error adding expense:', error);
-    // Show error toast to user
-    }
+  // Voluntary paywall trigger: Settings' "Upgrade to Pro" and the monthly
+  // AI-prompt cap in ChatView. The mandatory subscription gate itself lives
+  // in App.tsx, before this page ever mounts.
+  const handleShowPaywall = () => {
+    presentPaywall();
   };
 
-  // Handle successful subscription
-  const handleSubscriptionSuccess = () => {
-    setSubscriptionActive('com.savicash.subscription.monthly');
-    setShowPaywall(false);
-  };
-  
   // Calculate monthly total from current month's expenses
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
-  
+
   const monthlyTotal = expenses
     .filter((e) => {
       const date = new Date(e.created_at);
@@ -87,42 +34,24 @@ const Index = () => {
     })
     .reduce((sum, e) => sum + e.amount, 0);
 
-  // Show seamless loading state while checking usage (matches paywall background)
-  if (usageLoading) {
-    return (
-      <div className="fixed inset-0 bg-gradient-to-b from-background to-muted/30" />
-    );
-  }
-
-  // Show paywall if user has exceeded free usage
-  if (showPaywall) {
-    return (
-      <SubscriptionPaywall 
-        onSubscriptionSuccess={handleSubscriptionSuccess}
-        usageCount={usageData.usageCount}
-      />
-    );
-  }
-
   return (
     <div className="h-screen bg-background flex flex-col">
-      <AppHeader monthlyTotal={monthlyTotal} onShowPaywall={() => setShowPaywall(true)} />
-      
+      <AppHeader monthlyTotal={monthlyTotal} onShowPaywall={handleShowPaywall} />
+
       <div className="flex-1 overflow-hidden pb-20">
         {activeTab === "chat" && (
           <ChatView
             budget={budget}
-            onAddExpense={handleAddExpense}
+            onAddExpense={addExpense}
             onSetBudgetLimit={setBudgetLimit}
-            onShowPaywall={() => setShowPaywall(true)}
-            onIncrementUsage={handleIncrementUsage}
+            onShowPaywall={handleShowPaywall}
           />
         )}
         {activeTab === "stats" && <StatsView expenses={expenses} />}
         {activeTab === "recurring" && <RecurringView expenses={expenses} />}
         {activeTab === "history" && <HistoryView expenses={expenses} onDeleteExpense={deleteExpense} />}
       </div>
-      
+
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );
